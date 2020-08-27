@@ -155,16 +155,16 @@ allYears is a list of years/numbers in a sentence"""
 def get_day(line):
     month = re.findall(MONTH_PATTERN, line)
     if(not(month)):
-        return 1
+        return 0
     ###This finds a month word, then 1 or 2 digits.
     ###So January 15 or November 3, but not January 1757
     matchLine = month[0][1:-1] + r' [0-9]{1,2}[^0-9]'
     day = re.findall(matchLine, line)
     if(not(day)):
-        return 1
+        return 0
     day = int(day[0][:-1].split(' ')[1])
     if(day >= 32):
-        return 1
+        return 0
 
     return day
 
@@ -186,14 +186,18 @@ def tag_years(sentences, birthYear, deathYear):
         elif(month):
             newSentences.append([i, [month, day, firstYear]])
         elif(year):
+            firstYear = year
             newSentences.append([i, [0, day, year]])
 
     return newSentences
 
-def timeline(term):
+def timeline(term=None, soup=None):
     """Creates a timeline from the Wikipedia Page for term"""
     ###Open website, get and clean body text
-    soup = open_website(term)
+    if(term == None and soup == None):
+        return None
+    if(term):
+        soup = open_website(term)
     text = body_text(soup)
     text = citations(text)
 
@@ -206,83 +210,18 @@ def timeline(term):
     newSentences = time_sentences(newSentences, birthYear, deathYear)
     newSentences = tag_years(newSentences, birthYear, deathYear)[1:]
     ###Create a timeline
-    newSentences = sorted(newSentences, key=lambda x:x[1])
+    newSentences = sorted(newSentences, key=lambda x:[x[1][2], x[1][0], x[1][1]])
     return newSentences
 
 def combine_timelines(lines, names):
     """Combines two timelines and sorts them by date"""
     for i in range(len(lines)):
         newLine = lines[i].copy()
-        newLine = [[j[0], names[i], j[1], j[2], j[3]] for j in newLine]
+        newLine = [[j[0], names[i], j[1]] for j in newLine]
         lines[i] = newLine.copy()
 
     newLine = []
     for i in lines:
         newLine += i
 
-    return sorted(newLine, key=lambda x:[x[4], x[2], x[3]])
-
-def find_titles(soup):
-    """Finds a list of titles, and when the person held these titles"""
-    infobox = soup.find('table', attrs={'class':'infobox'})
-    allRows = infobox.find_all('tr')
-
-    titleList = []
-    for i in range(len(allRows)-1):
-        ###Titles are in <th> tags, are centered, take up the entire box, and
-        ###have the special dash
-        head = allRows[i].find('th')
-        if(head and 'colspan' in head.attrs and head.attrs['colspan'] == '2'
-           and SPAN_CHAR in allRows[i+1].text):
-            titleList.append([citations(allRows[i].text), citations(allRows[i+1].text)])
-
-    titleList = get_range(titleList)
-    return titleList
-
-def get_range(titleList):
-    """Gets the start and end dates that the person held the title"""
-    newList = []
-    for i in titleList:
-        print(i[1])
-        ###The date starts with a capital Month, which will be the second match
-        date = get_date_range(re.finditer(DATE_PATTERN, i[1]), i[1])
-        ###Splits the date into the start date and the end date
-        date = date.replace(',','').split(SPAN_CHAR)
-        date = [j.strip().split(' ') for j in date]
-        print(date)
-        ###Gets a list of numbers for both dates
-        date = [numerize_dates(j) for j in date]
-        newList.append([i[0], date[0], date[1]])
-
-    return newList
-
-def get_date_range(iterator, string):
-    """Gets the part of the string that has the date"""
-    num = 0
-    start, end = 0, None
-    for i in iterator:
-        num += 1
-        if(num == 2):
-            start = i.start()
-        if(num == 4):
-            end = i.end()
-
-    return string[start:end]
-
-def numerize_dates(dateList):
-    """Turns a list of strings into a list of numbers that are [Month, Day Year]"""
-    month, day, year = 0, 0, 0
-    for i in range(len(dateList)):
-        if(dateList[i].isnumeric()):
-            if(i > 0 and dateList[i-1] == 'AD'):
-                year = int(dateList[i])
-            elif(i < len(dateList)-1 and dateList[i+1] == 'BC'):
-                year = -int(dateList[i])
-            elif(day == 0):
-                day = int(dateList[i])
-            else:
-                year = int(dateList[i])
-        elif(dateList[i] != 'BC' and dateList[i] != 'AD'):
-            month = datetime.datetime.strptime(dateList[i], "%B").month
-    
-    return [month, day, year]
+    return sorted(newLine, key=lambda x:[x[2]])

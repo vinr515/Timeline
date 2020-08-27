@@ -23,7 +23,6 @@ def get_range(titleList):
     """Gets the start and end dates that the person held the title"""
     newList = []
     for i in titleList:
-        print(i[1])
         ###The date starts with a capital Month, which will be the second match
         date = get_date_range(re.finditer(DATE_PATTERN, i[1]), i[1])
 
