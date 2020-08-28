@@ -29,3 +29,22 @@ def open_website(searchTerm):
     r = requests.get(url).text
 
     return BeautifulSoup(r, "html.parser")
+
+def citations(text):
+    """Takes the citations out of the body text"""
+    text = text.replace('\n', ' ').replace('\t', ' ').replace('\xa0', ' ').strip()
+    allCites = re.findall(CITATION_PATTERN, text)
+    for i in allCites:
+        text = text.replace(i, '')
+
+    return text
+
+def before(date, bench):
+    """Finds if one list date ([MM, DD, YYYY]) is before another"""
+    return [date[2], date[0], date[1]] < [bench[2], bench[0], bench[1]]
+
+def after(date, bench):
+    return not(before(date, bench))
+
+
+

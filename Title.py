@@ -1,5 +1,4 @@
 from Base import *
-from timeline import citations
 import re
 
 def find_titles(soup):
@@ -7,15 +6,16 @@ def find_titles(soup):
     infobox = soup.find('table', attrs={'class':'infobox'})
     allRows = infobox.find_all('tr')
 
-    titleList = []
-    for i in range(len(allRows)-1):
+    titleList, headHold = [], None
+    for i in range(len(allRows)):
         ###Titles are in <th> tags, are centered, take up the entire box, and
         ###have the special dash
         head = allRows[i].find('th')
-        if(head and 'colspan' in head.attrs and head.attrs['colspan'] == '2'
-           and SPAN_CHAR in allRows[i+1].text):
-            titleList.append([citations(allRows[i].text), citations(allRows[i+1].text)])
-
+        if(head and 'colspan' in head.attrs and head.attrs['colspan'] == '2'):
+            headHold = allRows[i].text
+        if(SPAN_CHAR in allRows[i].text and re.findall(MONTH_PATTERN, allRows[i].text)):
+            titleList.append([citations(headHold), citations(allRows[i].text)])
+            
     titleList = get_range(titleList)
     return titleList
 
