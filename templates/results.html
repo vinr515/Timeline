@@ -1,0 +1,44 @@
+<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="../static/css/resultstyle.css">
+		<script Language="Javascript">
+			function showTitle(tag, personNum){
+				var num = tag.id.slice(5,);
+				var idValue = "text" + num;
+				var textHold = document.getElementById(idValue);
+				var showId = "showText" + personNum;
+				document.getElementById(showId).innerHTML = textHold.innerHTML;
+			}
+		</script>
+	</head>
+	
+	<body>
+	<table>
+		<tr>
+			<td onClick="showTitle(this,1);" id="title1" class="holder" width="39.06%"></td>
+			<td onClick="showTitle(this,1);" id="title2" class="holder" width="23.7%"></td>
+			<td onClick="showTitle(this,1);" id="title3" class="holder" width="1.15%"></td>
+			<td onClick="showTitle(this,1);" id="title4" class="holder" width="12.49%"></td>
+			<td onClick="showTitle(this,1);" id="title5" class="holder" width="7.89%"></td>
+			<td onClick="showTitle(this,1);" id="title6" class="holder" width="11.54%"></td>
+			<td onClick="showTitle(this,1);" id="title7" class="holder" width="2.00%"></td>
+			<td onClick="showTitle(this,1);" id="title8" class="holder" width="2.17%"></td>			
+		</tr>
+		<tr>
+			<td colspan="8" id="showText1">Click on a bar</td>
+		</tr>
+		<tr>
+			<td hidden class="special" id="text1">George Washington</td>
+			<td hidden class="special" id="text2">Member of the Virginia House of Burgesses</td>
+			<td hidden class="special" id="text3">Member of the Virginia House of Burgesses and Delegate to the Continental Congress from Virginia</td>
+			<td hidden class="special" id="text4">Commander in Chief of the Continental Army</td>
+			<td hidden class="special" id="text5">George Washington</td>
+			<td hidden class="special" id="text6">1st President of the United States</td>
+			<td hidden class="special" id="text7">George Washington</td>
+			<td hidden class="special" id="text8">7th Senior Officer of the United States Army</td>
+		</tr>
+		
+	</table>
+	
+	</body>
+</html>
