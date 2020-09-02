@@ -1,6 +1,7 @@
 import datetime
 import requests
 from bs4 import BeautifulSoup
+import re
 
 WIKI_BASE = "https://en.wikipedia.org/wiki/"
 ###This pattern gets all text inside of two brackets. 

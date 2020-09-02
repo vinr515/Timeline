@@ -1,0 +1,55 @@
+<html>
+	<head>
+		<title>Timeline Project</title>
+		<script language="Javascript">
+			function findRow(){
+				for(i=1;i <= 5;i++){
+					line = "term" + i.toString();
+					if(document.getElementById(line) == null){
+						alert("Adding a new " + line);
+						return i;
+					}
+				}
+				return false;
+			}
+			function addRow(){
+				var index = findRow();
+				if(index == false){
+					alert("Can't add another person");
+					return;
+				}
+				var formTable = document.getElementById("formTable");
+				var newRow = formTable.insertRow(index);
+				var termCell = newRow.insertCell(0);
+				var clarCell = newRow.insertCell(1);
+				
+				var termLine = "term" + index.toString();
+				var clarLine = "term" + index.toString();
+				
+				termCell.innerHTML = "<input type='text' name='" + termLine + "' id='" + termLine + "'>";
+				clarCell.innerHTML = "<input type='text' name='" + clarLine + "' id='" + clarLine + "'>";
+				
+			}
+		</script>
+	</head>
+
+	<body>
+		<h1><strong>Timeline</strong></h1>
+		</br>
+		<form action="/None" method="post">
+			<table id="formTable">
+				<tr>
+					<th>Search Term</th>
+					<th>Clarification</th>
+				</tr>
+				<tr>
+					<td><input type="text" name="term1" id="term1"></td>
+					<td><input type="text" name="clarify1" id="clarify1"></td>
+				</tr>
+			</table>
+			
+			<button type="submit">Enter</button>
+		</form>
+		<button onClick="addRow();">Add Thing</button>
+	</body>
+</html>
