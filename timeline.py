@@ -47,18 +47,32 @@ def lifespan(soup):
     """Returns the birth year and death year of a person (if possible)"""
     infobox = soup.find('table', attrs={'class':'infobox'})
     born, died = None, None
+    if(not(infobox)):
+        thisYear = datetime.date.today().year
+        return thisYear-100, thisYear
+    
     for i in infobox.find_all('tr'):
         if('born' in i.text.lower() and not(born)):
             born = i
         if('died' in i.text.lower() and not(died)):
             died = i
 
-    dieYear = datetime.date.today().year
-    bornYear = dieYear-100
+    dieYear = None # datetime.date.today().year
+    bornYear = None
     if(born):
-        bornYear = birth_year(born.text)
+        bornYear = birth_year(born.text.strip()[4:])
     if(died):
-        dieYear = birth_year(died.text)
+        dieYear = birth_year(died.text.strip()[4:])
+        
+    if(not(dieYear) and not(bornYear)):
+        todayYear = datetime.date.today().year
+        return todayYear*-10, todayYear
+    
+    if(not(bornYear)):
+        bornYear = dieYear-100
+
+    if(not(dieYear)):
+        dieYear = datetime.date.today().year
 
     return bornYear, dieYear
 
@@ -72,7 +86,21 @@ def birth_year(text):
         year = int(youngMatch[0][1:-1].split('-')[0])
         return year
 
+    britishMatch, regMatch = re.findall(BRITISH_PATTERN, text), re.findall(FULL_DATE_PATTERN, text)
+    fullMatch = None
+    if(britishMatch): fullMatch = britishMatch[0]
+    elif(regMatch): fullMatch = regMatch[0]
+
+    if(fullMatch):
+        year = int(fullMatch.replace(',', '').split(' ')[-1])
+        return year
+
+    if(len(adMatch) == 0 and len(bcMatch) == 0):
+        year = int(re.findall(r'[0-9]+', text)[0])
+        return year
+    
     line = adMatch[0] if adMatch else bcMatch[0]
+        
     return ad_bc_birthday(line)
 
 def ad_bc_birthday(text):
@@ -97,14 +125,17 @@ def time_sentences(sentences, birthYear, deathYear):
         if(not(yearNum)): yearNum = re.findall(YEAR_PATTERN, i)
         if(re.findall(MONTH_PATTERN, i)):
             newSentences.append(i)
-        elif(check_year(birthYear, deathYear, yearNum)):
+        elif(check_year(birthYear, deathYear, i)):
             newSentences.append(i)
 
     return newSentences
 
-def check_year(birthYear, deathYear, allYears):
+def check_year(birthYear, deathYear, string):
     """Finds out whether a certain year is in the person's lifespan.
 allYears is a list of years/numbers in a sentence"""
+    allYears = re.findall(OLD_YEAR_PATTERN, string)
+    if(not(allYears)):
+        allYears = re.findall(YEAR_PATTERN, string)
     year = None
     for i in allYears:
         i = i.split(' ')
@@ -137,7 +168,7 @@ def tag_years(sentences, birthYear, deathYear):
     firstYear = birthYear
     newSentences = []
     for i in sentences:
-        year = check_year(birthYear, deathYear, re.findall(YEAR_PATTERN, i))
+        year = check_year(birthYear, deathYear, i)
         month = re.findall(MONTH_PATTERN, i)
         day = 0
         if(month):

@@ -3,8 +3,11 @@ import re
 
 def find_titles(soup):
     """Finds a list of titles, and when the person held these titles"""
-    infobox = soup.find('table', attrs={'class':'infobox'})
-    allRows = infobox.find_all('tr')
+    try:
+        infobox = soup.find('table', attrs={'class':'infobox'})
+        allRows = infobox.find_all('tr')
+    except AttributeError:
+        return []
 
     titleList, headHold = [], None
     for i in range(len(allRows)):
@@ -13,9 +16,11 @@ def find_titles(soup):
         head = allRows[i].find('th')
         if(head and 'colspan' in head.attrs and head.attrs['colspan'] == '2'):
             headHold = allRows[i].text
-        if(SPAN_CHAR in allRows[i].text and re.findall(MONTH_PATTERN, allRows[i].text)):
+        passMatchTest = (re.findall(MONTH_PATTERN, allRows[i].text) or
+                         re.findall(YEAR_PATTERN, allRows[i].text))
+        if(SPAN_CHAR in allRows[i].text and passMatchTest):
             titleList.append([citations(headHold), citations(allRows[i].text)])
-            
+     
     titleList = get_range(titleList)
     return titleList
 
@@ -25,6 +30,8 @@ def get_range(titleList):
     for i in titleList:
         ###The date starts with a capital Month, which will be the second match
         date = get_date_range(re.finditer(DATE_PATTERN, i[1]), i[1])
+        if(not(SPAN_CHAR in date) or date == i[1]):
+            date = re.findall(OLD_SPAN_PATTERN, i[1])[0]
 
         ###Splits the date into the start date and the end date
         date = date.replace(',','').split(SPAN_CHAR)
@@ -33,6 +40,7 @@ def get_range(titleList):
 
         ###Gets a list of numbers for both dates
         date = [numerize_dates(j) for j in date]
+        date = list(order_dates(*date))
 
         newList.append([i[0], date[0], date[1]])
 
@@ -51,6 +59,8 @@ def get_date_range(iterator, string):
 def numerize_dates(dateList):
     """Turns a list of strings into a list of numbers that are [Month, Day Year]"""
     month, day, year = 0, 0, 0
+    if(len(dateList) == 1):
+        return [0, 0, int(dateList[0])]
     for i in range(len(dateList)):
         ###This gets the year/day
         if(dateList[i].isnumeric()):
@@ -73,3 +83,14 @@ def numerize_dates(dateList):
                 pass
     
     return [month, day, year]
+
+def order_dates(start, end):
+    if(start == end):
+        return start, end
+    startVal = start[2] + (((start[0]*30)+start[1])/365)
+    endVal = end[2] + (((end[0]*30)+end[1])/365)
+    if(startVal < endVal):
+        return start, end
+    if(-startVal < endVal):
+        return [start[0], start[1], -start[2]], end
+    return start, [end[0], end[1], end[2]]
