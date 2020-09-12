@@ -35,6 +35,9 @@ def get_range(titleList):
 
         ###Splits the date into the start date and the end date
         date = date.replace(',','').split(SPAN_CHAR)
+        ###Fake titles/dates usually have other things that mess everything up
+        if(len(date) != 2):
+            continue
 
         date = [j.strip().split(' ') for j in date]
 

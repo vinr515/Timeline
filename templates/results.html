@@ -2,8 +2,9 @@
 	<head>
 		<link rel="stylesheet" type="text/css" href="../static/css/resultstyle.css">
 		<script Language="Javascript">
-			function showTitle(tag, personNum){
+			function showTitle(tag){
 				var num = tag.id.slice(5,);
+				var personNum = tag.offsetParent.id.slice(6,);
 				var idValue = "text" + num;
 				var textHold = document.getElementById(idValue);
 				var showId = "showText" + personNum;
@@ -12,34 +13,38 @@
 		</script>
 	</head>
 	
-	<body>
-	<h1><strong>{{ total }}</strong></h1>
-	<table>
-		<tr>
-			<td onClick="showTitle(this,1);" id="title1" class="holder" width="39.06%"></td>
-			<td onClick="showTitle(this,1);" id="title2" class="holder" width="23.7%"></td>
-			<td onClick="showTitle(this,1);" id="title3" class="holder" width="1.15%"></td>
-			<td onClick="showTitle(this,1);" id="title4" class="holder" width="12.49%"></td>
-			<td onClick="showTitle(this,1);" id="title5" class="holder" width="7.89%"></td>
-			<td onClick="showTitle(this,1);" id="title6" class="holder" width="11.54%"></td>
-			<td onClick="showTitle(this,1);" id="title7" class="holder" width="2.00%"></td>
-			<td onClick="showTitle(this,1);" id="title8" class="holder" width="2.17%"></td>			
-		</tr>
-		<tr>
-			<td colspan="8" id="showText1">Click on a bar</td>
-		</tr>
-		<tr>
-			<td hidden class="special" id="text1">George Washington</td>
-			<td hidden class="special" id="text2">Member of the Virginia House of Burgesses</td>
-			<td hidden class="special" id="text3">Member of the Virginia House of Burgesses and Delegate to the Continental Congress from Virginia</td>
-			<td hidden class="special" id="text4">Commander in Chief of the Continental Army</td>
-			<td hidden class="special" id="text5">George Washington</td>
-			<td hidden class="special" id="text6">1st President of the United States</td>
-			<td hidden class="special" id="text7">George Washington</td>
-			<td hidden class="special" id="text8">7th Senior Officer of the United States Army</td>
-		</tr>
-		
-	</table>
+	<body>	
+	{{ testVar }}
+	{% for i in range(names|length) %}
+		<div>
+			<h1><strong>{{ names[i] }}</strong></h1>
+			{% if lifeDates[i][1] == 2020 %}
+				<p>{{ lifeDates[i][0] }} - Present</p>
+			{% else %}
+				<p>{{ lifeDates[i][0] }} - {{ lifeDates[i][1] }}</p>
+			{% endif %}
+			
+			{% set tableId = "person" ~ (i+1) %}
+			<table id={{ tableId }}>
+				<tr>
+				{% for j in range(titles[i]|length) %}
+					{% set idString = "title" ~ onClickVars[i][j][1] %}
+					<td onClick="showTitle(this);" class="holder" id={{ idString }} width={{ titles[i][j][1] }}></td>
+				{% endfor %}
+				</tr>
+				<tr>
+					{% set idString = "showText" ~ (i+1) %}
+					<td colspan="8" id={{ idString }}>Click on a bar</td>
+				</tr>
+				<tr>
+				{% for j in range(titles[i]|length) %}
+					{% set idString = "text" ~ onClickVars[i][j][1] %}
+					<td hidden class="special" id={{ idString }}>{{ titles[i][j][0] }}</td>
+				{% endfor %}
+				</tr>
+			</table>
+		</div>
+	{% endfor %}
 	
 	</body>
 </html>
