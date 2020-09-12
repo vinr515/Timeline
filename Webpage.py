@@ -16,7 +16,7 @@ def title_page():
     titles, lifeDates, names, onClickVars = get_person_info(formNames)
 
     return render_template("results.html", titles=titles, lifeDates=lifeDates,
-                           names=names, onClickVars=onClickVars, testVar="fdasf<strong>FFFF</strong>")
+                           names=names, onClickVars=onClickVars)
 
 def get_names():
     allNames = []
@@ -141,5 +141,5 @@ def add_time_spans(barVals, lastTime):
         newVals.append([newName, barVals[i][1]])
 
     newName = "{} ({} - {})".format(barVals[-1][0], barVals[-1][2], lastTime)
-    newVals.append(newName)
+    newVals.append([newName, barVals[-1][1]])
     return newVals
