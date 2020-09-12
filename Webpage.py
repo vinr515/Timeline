@@ -3,6 +3,7 @@ from Base import *
 from Title import find_titles
 from timeline import lifespan
 import math
+import datetime
 
 app = Flask(__name__)
 MIN_PERCENT = 1
@@ -47,8 +48,12 @@ for each person"""
 
         soup = open_website(page)
         thisTitle, thisLife = find_titles(soup), lifespan(soup)
-        thisTitle = scale_titles(thisTitle, thisLife, thisName)
-        
+        if(thisTitle):
+            thisTitle = scale_titles(thisTitle, thisLife, thisName)
+        else:
+            thisTitle = blank_title_bars(thisLife, thisName)
+
+        print(thisTitle[0])
         titles.append(thisTitle)
         lifeDates.append(thisLife)
         names.append(thisName)
@@ -81,7 +86,6 @@ def scale_titles(titles, lifespan, name):
     newTitles = sorted([[i[0], i[1]*scaleNum, i[2], i[3]] for i in newTitles], key=lambda x:x[1])
 
     barVals = bar_values(newTitles, name, "1/1/{}".format(birth), "12/31/{}".format(died))
-    print(barVals[-1])
     return barVals
     
 def bar_values(titles, name, birth, lastTime):
@@ -143,3 +147,12 @@ def add_time_spans(barVals, lastTime):
     newName = "{} ({} - {})".format(barVals[-1][0], barVals[-1][2], lastTime)
     newVals.append([newName, barVals[-1][1]])
     return newVals
+
+def blank_title_bars(lifespan, name):
+    print(lifespan[0])
+    print(lifespan[1])
+    string = "{} ({} - {})".format(name, lifespan[0], lifespan[1])
+    if(lifespan[-1] == datetime.date.today().year):
+        string = "{} ({} - Present)".format(name, lifespan[0])
+
+    return [[string, 100.0]]
