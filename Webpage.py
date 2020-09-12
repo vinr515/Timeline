@@ -11,7 +11,7 @@ MIN_PERCENT = 1
 def home_page():
     return render_template("index.html")
 
-@app.route('/results', methods=['POST'])
+@app.route('/results', methods=['GET'])
 def title_page():
     formNames = get_names()
     titles, lifeDates, names, onClickVars, links = get_person_info(formNames)
@@ -21,10 +21,10 @@ def title_page():
 
 def get_names():
     allNames = []
-    numNames = math.ceil(len(request.form)/2)
-    
+    numNames = math.ceil(len(request.args)/2)
+
     for i in range(numNames):
-        name, clar = request.form['term'+str(i+1)], request.form['clarify'+str(i+1)]
+        name, clar = request.args['term'+str(i+1)], request.args['clarify'+str(i+1)]
         allNames.append((name, clar))
 
     return allNames
@@ -54,7 +54,6 @@ for each person"""
         else:
             thisTitle = blank_title_bars(thisLife, thisName)
 
-        print(thisTitle[0])
         titles.append(thisTitle)
         lifeDates.append(thisLife)
         names.append(thisName)
@@ -151,8 +150,7 @@ def add_time_spans(barVals, lastTime):
     return newVals
 
 def blank_title_bars(lifespan, name):
-    print(lifespan[0])
-    print(lifespan[1])
+    """Returns the values for the bars when a person doesn't have any titles"""
     string = "{} ({} - {})".format(name, lifespan[0], lifespan[1])
     if(lifespan[-1] == datetime.date.today().year):
         string = "{} ({} - Present)".format(name, lifespan[0])
