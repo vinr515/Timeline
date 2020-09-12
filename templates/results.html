@@ -22,6 +22,8 @@
 			{% else %}
 				<p>{{ lifeDates[i][0] }} - {{ lifeDates[i][1] }}</p>
 			{% endif %}
+			{% set linkName = "Link to " ~ names[i] ~ "'s Wikipedia Page" %}
+			<a href={{ links[i] }}>{{ linkName }}</a>
 			
 			{% set tableId = "person" ~ (i+1) %}
 			<table id={{ tableId }}>

@@ -14,10 +14,10 @@ def home_page():
 @app.route('/results', methods=['POST'])
 def title_page():
     formNames = get_names()
-    titles, lifeDates, names, onClickVars = get_person_info(formNames)
+    titles, lifeDates, names, onClickVars, links = get_person_info(formNames)
 
     return render_template("results.html", titles=titles, lifeDates=lifeDates,
-                           names=names, onClickVars=onClickVars)
+                           names=names, onClickVars=onClickVars, links=links)
 
 def get_names():
     allNames = []
@@ -36,6 +36,7 @@ for each person"""
     lifeDates = []
     names = []
     onClickVars = []
+    links = []
     index = 1
     for i in range(len(formNames)):
         j = formNames[i]
@@ -57,12 +58,13 @@ for each person"""
         titles.append(thisTitle)
         lifeDates.append(thisLife)
         names.append(thisName)
+        links.append(WIKI_BASE + page)
         
         click = "showTitle(this, {});".format(i+1)
         onClickVars.append([(click, str(k+index)) for k in range(len(thisTitle))])
         index += len(thisTitle)
 
-    return titles, lifeDates, names, onClickVars
+    return titles, lifeDates, names, onClickVars, links
 
 def scale_titles(titles, lifespan, name):
     """Scales the titles so that one long bar can be created for the webpage"""
