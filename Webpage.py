@@ -32,27 +32,12 @@ def get_names():
 def get_person_info(formNames):
     """Gets the name, lifespan, and titles given a list of [(name, clarify)]
 for each person"""
-    titles = []
-    lifeDates = []
-    names = []
-    onClickVars = []
-    links = []
+    titles, lifeDates, names, onClickVars, links = [], [], [], [], []
     index = 1
     for i in range(len(formNames)):
-        j = formNames[i]
-        if(j[1].strip() == ""):
-            page = j[0]
-            thisName = j[0]
-        else:
-            page = "{}_({})".format(j[0], j[1].lower())
-            thisName = "{} ({})".format(j[0], j[1])
-
+        page, thisName = get_page_name(formNames[i])
         soup = open_website(page)
-        thisTitle, thisLife = find_titles(soup), lifespan(soup)
-        if(thisTitle):
-            thisTitle = scale_titles(thisTitle, thisLife, thisName)
-        else:
-            thisTitle = blank_title_bars(thisLife, thisName)
+        thisTitle, thisLife = get_person_titles(soup, thisName)
 
         titles.append(thisTitle)
         lifeDates.append(thisLife)
@@ -65,9 +50,37 @@ for each person"""
 
     return titles, lifeDates, names, onClickVars, links
 
+def get_page_name(name):
+    """Returns the links to each page"""
+    if(name[1].strip() == ""):
+        return name[0], name[0]
+    return "{}_({})".format(name[0], name[1].lower()), name[0]
+
+def get_person_titles(soup, name):
+    """Returns everything about one person, with a soup object"""
+    thisTitle, thisLife = find_titles(soup), lifespan(soup)
+    if(thisTitle):
+        thisTitle = scale_titles(thisTitle, thisLife, name)
+    else:
+        thisTitle = blank_title_bars(thisLife, name)
+
+    return thisTitle, thisLife
+
 def scale_titles(titles, lifespan, name):
     """Scales the titles so that one long bar can be created for the webpage"""
     birth, died = lifespan 
+    newTitles = float_dates(titles, birth)
+    if(not(newTitles)): return []
+
+    deathNum = (died + (364/365)) - birth
+    scaleNum = 100/deathNum
+    newTitles = sorted([[i[0], i[1]*scaleNum, i[2], i[3]] for i in newTitles], key=lambda x:x[1])    
+    
+    barVals = bar_values(newTitles, name, "1/1/{}".format(birth), "12/31/{}".format(died))
+    return barVals
+
+def float_dates(titles, birth):
+    """Turns all the [M, D, Y] dates into one number"""
     newTitles = []
     for i in range(len(titles)):
         startNum = titles[i][1][2] + (((titles[i][1][0]*12)+titles[i][1][1])/365)
@@ -81,13 +94,7 @@ def scale_titles(titles, lifespan, name):
         newTitles.extend([start, end])
 
     newTitles = [[i[0], i[1]-birth, i[2], i[3]] for i in newTitles]
-    if(not(newTitles)): return []
-    
-    scaleNum = 100/max(newTitles, key=lambda x:x[1])[1]
-    newTitles = sorted([[i[0], i[1]*scaleNum, i[2], i[3]] for i in newTitles], key=lambda x:x[1])
-
-    barVals = bar_values(newTitles, name, "1/1/{}".format(birth), "12/31/{}".format(died))
-    return barVals
+    return newTitles
     
 def bar_values(titles, name, birth, lastTime):
     """Gets all the values for the actual bar on the webpage"""
@@ -103,7 +110,7 @@ def bar_values(titles, name, birth, lastTime):
         barVals.append([lastTitle, titles[i+1][1]-titles[i][1], titles[i][3]])
 
     if(sum([i[1] for i in barVals]) != 100):
-        barVals.append(["", 100-sum([i[1] for i in barVals])])
+        barVals.append(["", 100-sum([i[1] for i in barVals]), titles[-1][3]])
 
     barVals = replace_blanks(barVals, name)
     barVals = adjust_size(barVals)
@@ -143,7 +150,8 @@ def add_time_spans(barVals, lastTime):
     newVals = []
     for i in range(len(barVals)-1):
         newName = "{} ({} - {})".format(barVals[i][0], barVals[i][2], barVals[i+1][2])
-        newVals.append([newName, barVals[i][1]])
+        width = str(barVals[i][1])+"%"
+        newVals.append([newName, width])
 
     newName = "{} ({} - {})".format(barVals[-1][0], barVals[-1][2], lastTime)
     newVals.append([newName, barVals[-1][1]])
@@ -155,4 +163,4 @@ def blank_title_bars(lifespan, name):
     if(lifespan[-1] == datetime.date.today().year):
         string = "{} ({} - Present)".format(name, lifespan[0])
 
-    return [[string, 100.0]]
+    return [[string, "100.0%"]]
