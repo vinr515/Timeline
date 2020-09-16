@@ -7,6 +7,7 @@ import datetime
 
 app = Flask(__name__)
 MIN_PERCENT = 1
+TIMELINE_LINK = "https://en.wikipedia.org/wiki/Timeline"
 @app.route('/')
 def home_page():
     return render_template("index.html")
@@ -50,8 +51,18 @@ for each person"""
         onClickVars.append([(click, str(k+index)) for k in range(len(thisTitle))])
         index += len(thisTitle)
 
-    print("Common: ", lifeDates)
-
+    if(len(formNames) >= 2):
+        ###Adds a timeline of when each person lived.
+        bars, fullTime = common_titles(lifeDates, names)
+        titles.append(bars)
+        print(fullTime)
+        fullTime = ['/'.join(map(str, j)) for j in fullTime]
+        lifeDates.append(fullTime)
+        names.append("Common")
+        links.append(TIMELINE_LINK)
+        click = "showTitle(this, {});".format(len(formNames)+1)
+        onClickVars.append([(click, str(k+index)) for k in range(len(bars))])
+        
     return titles, lifeDates, names, onClickVars, links
 
 def get_page_name(name):
@@ -83,7 +94,7 @@ def get_person_titles(soup, name):
 
 def scale_titles(titles, lifespan, name):
     """Scales the titles so that one long bar can be created for the webpage"""
-    birth, died = lifespan 
+    birth, died = lifespan
     newTitles = zero_dates(titles, birth)
     if(not(newTitles)): return []
 
@@ -126,13 +137,22 @@ def bar_values(titles, name, birth, lastTime):
     barVals = [["", titles[0][1], birth]]
     lastTitle = ""
     for i in range(len(titles)-1):
-        lastTitle = lastTitle.split(" and ")
+        lastTitle = lastTitle.split(" ^^^ ")
         if(titles[i][2] == 1):
             lastTitle = lastTitle + [titles[i][0]]
         else:
+            if(not(titles[i][0] in lastTitle)):
+                print("Error in bar_values", end=': ')
+                print("{} is missing for {}".format(titles[i][0], name))
+                print("2nd is {}".format(titles[i][2]))
+                print("Last is {}".format(lastTitle))
+                print('\n'.join([str(j) for j in titles]))
+                print(5/0)
             lastTitle.remove(titles[i][0])
-        lastTitle = " and ".join([j for j in lastTitle if j])
-        barVals.append([lastTitle, titles[i+1][1]-titles[i][1], titles[i][3]])
+        lastTitle = " ^^^ ".join([j for j in lastTitle if j])
+
+        placeTitle = lastTitle.replace("^^^", "and")
+        barVals.append([placeTitle, titles[i+1][1]-titles[i][1], titles[i][3]])
 
     if(sum([i[1] for i in barVals]) != 100):
         barVals.append(["", 100-sum([i[1] for i in barVals]), titles[-1][3]])
@@ -194,3 +214,21 @@ def blank_title_bars(lifespan, name):
         string = "{} ({} - Present)".format(name, startDate)
 
     return [[string, "100.0%"]]
+
+def common_titles(lifespans, names):
+    """Makes a timeline that puts everyone's time period in perspective"""
+    fakeTitles = []
+    for i in range(len(names)):
+        birth = list(map(int, lifespans[i][0].split('/')))
+        died = list(map(int, lifespans[i][1].split('/')))
+        fakeTitles.append([names[i], birth, died])
+    
+    allLifes = []
+    for i in lifespans:
+        personLife = [list(map(int, j.split('/'))) for j in i]
+        allLifes.extend(personLife)
+
+    allLifes = sorted(allLifes, key=float_dates)
+    
+    bars = scale_titles(fakeTitles, (allLifes[0], allLifes[-1]), 'No one was alive')
+    return bars, (allLifes[0], allLifes[-1])

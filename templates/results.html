@@ -36,12 +36,12 @@
 				</tr>
 				<tr>
 					{% set idString = "showText" ~ (i+1) %}
-					<td colspan="8" id={{ idString }}>Click on a bar</td>
+					<td colspan={{ titles[i]|length }} width="100%" id={{ idString }}>Click on a bar</td>
 				</tr>
 				<tr>
 				{% for j in range(titles[i]|length) %}
 					{% set idString = "text" ~ onClickVars[i][j][1] %}
-					<td hidden class="special" id={{ idString }}>{{ titles[i][j][0] }}</td>
+					<td hidden class="special" width="100%" id={{ idString }}>{{ titles[i][j][0] }}</td>
 				{% endfor %}
 				</tr>
 			</table>
