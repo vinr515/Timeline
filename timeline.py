@@ -49,7 +49,7 @@ def lifespan(soup):
     born, died = None, None
     if(not(infobox)):
         thisYear = datetime.date.today().year
-        return thisYear-100, thisYear
+        return thisYear*-10, thisYear
     
     for i in infobox.find_all('tr'):
         if('born' in i.text.lower() and not(born)):
@@ -57,7 +57,7 @@ def lifespan(soup):
         if('died' in i.text.lower() and not(died)):
             died = i
 
-    dieYear = None # datetime.date.today().year
+    dieYear = None
     bornYear = None
     if(born):
         bornYear = birth_year(born.text.strip()[4:])
@@ -104,7 +104,7 @@ def birth_year(text):
 
     if(len(adMatch) == 0 and len(bcMatch) == 0):
         year = int(re.findall(r'[0-9]+', text)[0])
-        return [0, 0, year]
+        return [1, 0, year]
     
     line = adMatch[0] if adMatch else bcMatch[0]
 

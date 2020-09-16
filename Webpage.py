@@ -50,6 +50,8 @@ for each person"""
         onClickVars.append([(click, str(k+index)) for k in range(len(thisTitle))])
         index += len(thisTitle)
 
+    print("Common: ", lifeDates)
+
     return titles, lifeDates, names, onClickVars, links
 
 def get_page_name(name):
@@ -67,6 +69,10 @@ def get_person_titles(soup, name):
         thisLife = (thisLife[0], [12,32,thisLife[1]])
     else:
         lifeString = ["/".join(map(str, i)) for i in thisLife]
+
+    born, died = [float_dates(i) for i in thisLife]
+    thisTitle = [i for i in thisTitle if float_dates(i[1]) >= born and
+                 float_dates(i[2]) <= died]
         
     if(thisTitle):
         thisTitle = scale_titles(thisTitle, thisLife, name)
@@ -77,8 +83,6 @@ def get_person_titles(soup, name):
 
 def scale_titles(titles, lifespan, name):
     """Scales the titles so that one long bar can be created for the webpage"""
-    print(titles)
-    print('\n')
     birth, died = lifespan 
     newTitles = zero_dates(titles, birth)
     if(not(newTitles)): return []
@@ -87,11 +91,8 @@ def scale_titles(titles, lifespan, name):
     
     scaleNum = 100/deathNum
     newTitles = sorted([[i[0], i[1]*scaleNum, i[2], i[3]] for i in newTitles], key=lambda x:x[1])    
-    print(newTitles)
-    print('\n')
     barVals = bar_values(newTitles, name, "{}/{}/{}".format(*birth), "{}/{}/{}".format(*died))
-    print(barVals)
-    print('\n')
+
     return barVals
 
 def zero_dates(titles, birth):
