@@ -2,8 +2,9 @@
 	<head>
 		<title>Timeline Project</title>
 		<script language="Javascript">
+			var MAX_ENTRIES = 50;
 			function findRow(){
-				for(i=1;i <= 5;i++){
+				for(i=1;i <= MAX_ENTRIES;i++){
 					line = "term" + i.toString();
 					if(document.getElementById(line) == null){
 						return i;

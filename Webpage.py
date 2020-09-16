@@ -15,9 +15,11 @@ def home_page():
 def title_page():
     formNames = get_names()
     titles, lifeDates, names, onClickVars, links = get_person_info(formNames)
+    titleWord = "Timeline Project - " + ", ".join(names)
 
     return render_template("results.html", titles=titles, lifeDates=lifeDates,
-                           names=names, onClickVars=onClickVars, links=links)
+                           names=names, onClickVars=onClickVars, links=links,
+                           titleWord=[titleWord])
 
 def get_names():
     allNames = []
@@ -59,32 +61,46 @@ def get_page_name(name):
 def get_person_titles(soup, name):
     """Returns everything about one person, with a soup object"""
     thisTitle, thisLife = find_titles(soup), lifespan(soup)
+    
+    if(type(thisLife[1]) == int):
+        lifeString = ["/".join(map(str, thisLife[0])), "Present"]
+        thisLife = (thisLife[0], [12,32,thisLife[1]])
+    else:
+        lifeString = ["/".join(map(str, i)) for i in thisLife]
+        
     if(thisTitle):
         thisTitle = scale_titles(thisTitle, thisLife, name)
     else:
         thisTitle = blank_title_bars(thisLife, name)
 
-    return thisTitle, thisLife
+    return thisTitle, lifeString
 
 def scale_titles(titles, lifespan, name):
     """Scales the titles so that one long bar can be created for the webpage"""
+    print(titles)
+    print('\n')
     birth, died = lifespan 
-    newTitles = float_dates(titles, birth)
+    newTitles = zero_dates(titles, birth)
     if(not(newTitles)): return []
 
-    deathNum = (died + (364/365)) - birth
+    deathNum = float_dates(died)-float_dates(birth)
+    
     scaleNum = 100/deathNum
     newTitles = sorted([[i[0], i[1]*scaleNum, i[2], i[3]] for i in newTitles], key=lambda x:x[1])    
-    
-    barVals = bar_values(newTitles, name, "1/1/{}".format(birth), "12/31/{}".format(died))
+    print(newTitles)
+    print('\n')
+    barVals = bar_values(newTitles, name, "{}/{}/{}".format(*birth), "{}/{}/{}".format(*died))
+    print(barVals)
+    print('\n')
     return barVals
 
-def float_dates(titles, birth):
-    """Turns all the [M, D, Y] dates into one number"""
+def zero_dates(titles, birth):
+    """Turns all the [M, D, Y] dates into one number, starting from 0"""
     newTitles = []
+    birthFloat = float_dates(birth)
     for i in range(len(titles)):
-        startNum = titles[i][1][2] + (((titles[i][1][0]*12)+titles[i][1][1])/365)
-        endNum = titles[i][2][2] + (((titles[i][2][0]*12)+titles[i][2][1])/365)
+        startNum = float_dates(titles[i][1])
+        endNum = float_dates(titles[i][2])
 
         startString = "/".join(map(str, titles[i][1]))
         endString = "/".join(map(str, titles[i][2]))
@@ -93,8 +109,16 @@ def float_dates(titles, birth):
         end = [titles[i][0], endNum, 0, endString]
         newTitles.extend([start, end])
 
-    newTitles = [[i[0], i[1]-birth, i[2], i[3]] for i in newTitles]
+    newTitles = [[i[0], i[1]-birthFloat, i[2], i[3]] for i in newTitles]
     return newTitles
+
+def float_dates(date):
+    """Turns a date (list, [M, D, Y]) into one floating number"""
+    month, day, year = date
+    month -= 1
+    num = year + (((month*30) + day)/365)
+
+    return num
     
 def bar_values(titles, name, birth, lastTime):
     """Gets all the values for the actual bar on the webpage"""
@@ -153,14 +177,19 @@ def add_time_spans(barVals, lastTime):
         width = str(barVals[i][1])+"%"
         newVals.append([newName, width])
 
+    ###This is the day. 32 is used to show that it isn't really a day,
+    ###and actually the present
+    if(lastTime.split("/")[1] == "32"):
+        lastTime = "Present"
     newName = "{} ({} - {})".format(barVals[-1][0], barVals[-1][2], lastTime)
     newVals.append([newName, barVals[-1][1]])
     return newVals
 
 def blank_title_bars(lifespan, name):
     """Returns the values for the bars when a person doesn't have any titles"""
-    string = "{} ({} - {})".format(name, lifespan[0], lifespan[1])
-    if(lifespan[-1] == datetime.date.today().year):
-        string = "{} ({} - Present)".format(name, lifespan[0])
+    startDate, endDate = "/".join(map(str, lifespan[0])), "/".join(map(str, lifespan[1]))
+    string = "{} ({} - {})".format(name, startDate, endDate)
+    if(lifespan[-1][1] == 32):
+        string = "{} ({} - Present)".format(name, startDate)
 
     return [[string, "100.0%"]]

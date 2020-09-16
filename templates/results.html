@@ -1,5 +1,6 @@
 <html>
 	<head>
+		<title id="pageTitle">{{ titleWord[0] }}</title>
 		<link rel="stylesheet" type="text/css" href="../static/css/resultstyle.css">
 		<script Language="Javascript">
 			function showTitle(tag){
@@ -13,7 +14,7 @@
 		</script>
 	</head>
 	
-	<body>	
+	<body>
 	{% for i in range(names|length) %}
 		<div>
 			<h1><strong>{{ names[i] }}</strong></h1>

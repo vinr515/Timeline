@@ -83,24 +83,31 @@ def birth_year(text):
     if(youngMatch):
         ###It takes everything inside the parantheses, then takes the first number
         ###Wikipedia uses YYYY-MM-DD
-        year = int(youngMatch[0][1:-1].split('-')[0])
-        return year
+        date = list(map(int, youngMatch[0][1:-1].split('-')))
+        date = [date[1], date[2], date[0]]
+        return date
 
     britishMatch, regMatch = re.findall(BRITISH_PATTERN, text), re.findall(FULL_DATE_PATTERN, text)
     fullMatch = None
     if(britishMatch): fullMatch = britishMatch[0]
     elif(regMatch): fullMatch = regMatch[0]
 
-    if(fullMatch):
-        year = int(fullMatch.replace(',', '').split(' ')[-1])
-        return year
+    if(fullMatch and not(adMatch or bcMatch)):
+        date = fullMatch.replace(',', '').split(' ')
+        ###Sometimes the month comes first (June 15 vs 15 June)
+        ###The month is the word, the date is the number
+        if(date[1].isnumeric()): month, day = date[0], date[1]
+        else: month, day = date[1], date[0]
+        
+        month = datetime.datetime.strptime(month, "%B").month
+        return [month, int(day), int(date[2])]
 
     if(len(adMatch) == 0 and len(bcMatch) == 0):
         year = int(re.findall(r'[0-9]+', text)[0])
-        return year
+        return [0, 0, year]
     
     line = adMatch[0] if adMatch else bcMatch[0]
-        
+
     return ad_bc_birthday(line)
 
 def ad_bc_birthday(text):
@@ -108,14 +115,19 @@ def ad_bc_birthday(text):
 (It is included for old people)"""
     text = text.split()
     ###Sometimes dates are AD 42, and sometimes they are 42 AD
-    try:
-        year = int(text[-1])
-    except ValueError:
-        year = int(text[-2])
-    if('BC' in text):
-        year *= -1
+    if(len(text) == 4):
+        month = text[1] if text[0].isnumeric() else text[0]
+        month = datetime.datetime.strptime(month, "%B").month
 
-    return year
+        day = int(text[0]) if text[0].isnumeric() else int(text[1])
+    else:
+        month, day = 0, 0
+    if('AD' in text):
+        return [month, day, int(text[-1])]
+    elif('BC' in text):
+        return [month, day, -int(text[-2])]
+
+    return [month, day, 0]
 
 def time_sentences(sentences, birthYear, deathYear):
     """Gets all sentences that have a year or month in them. """
