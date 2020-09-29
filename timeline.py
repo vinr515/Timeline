@@ -131,6 +131,7 @@ def ad_bc_birthday(text):
 
 def time_sentences(sentences, birthYear, deathYear):
     """Gets all sentences that have a year or month in them. """
+    #print(3, birthYear, 4, deathYear)
     newSentences = []
     for i in sentences:
         yearNum = re.findall(OLD_YEAR_PATTERN, i)
@@ -145,6 +146,7 @@ def time_sentences(sentences, birthYear, deathYear):
 def check_year(birthYear, deathYear, string):
     """Finds out whether a certain year is in the person's lifespan.
 allYears is a list of years/numbers in a sentence"""
+    #print(1, birthYear, 2, deathYear)
     allYears = re.findall(OLD_YEAR_PATTERN, string)
     if(not(allYears)):
         allYears = re.findall(YEAR_PATTERN, string)
@@ -214,8 +216,9 @@ def timeline(term=None, soup=None):
 
     ###Get relevant websites
     birthYear, deathYear = lifespan(soup)
-    newSentences = time_sentences(newSentences, birthYear, deathYear)
-    newSentences = tag_years(newSentences, birthYear, deathYear)[1:]
+    #print(5, birthYear[2], 6, deathYear[2])
+    newSentences = time_sentences(newSentences, birthYear[2], deathYear[2])
+    newSentences = tag_years(newSentences, birthYear[2], deathYear[2])[1:]
     ###Create a timeline
     newSentences = sorted(newSentences, key=lambda x:[x[1][2], x[1][0], x[1][1]])
     return newSentences

@@ -10,6 +10,25 @@
 				var textHold = document.getElementById(idValue);
 				var showId = "showText" + personNum;
 				document.getElementById(showId).innerHTML = textHold.innerHTML;
+				
+				var dateId = "dateRows" + num;
+				resetDates(dateId);
+			}
+			function resetDates(idVal){
+				var i = 1;
+				var flag = true;
+				while(flag){
+					if(document.getElementById("dateRows"+i) == null){
+						flag = false;
+					}else{
+						document.getElementById("dateRows"+i).hidden = true;
+					}
+					i += 1;
+				}
+				document.getElementById(idVal).hidden = false;
+			}
+			function showDate(tag){
+				alert(5);
 			}
 		</script>
 	</head>
@@ -44,6 +63,17 @@
 					<td hidden class="special" width="100%" id={{ idString }}>{{ titles[i][j][0] }}</td>
 				{% endfor %}
 				</tr>
+			</table>
+			<table>
+				{% for j in range(8) %}
+					{% set idString = "dateRows" ~ (j+1) %}
+					<tr hidden id={{ idString }}>
+						{% for k in range(10) %}
+						{% set idString = "date" ~ j*k %}
+						<td onClick="showDate(this);" class="holder" id={{ idString }} width="10%"></td>
+						{% endfor %}
+					</tr>
+				{% endfor %}
 			</table>
 		</div>
 	{% endfor %}

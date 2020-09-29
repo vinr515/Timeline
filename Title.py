@@ -15,7 +15,7 @@ def find_titles(soup):
         ###have the special dash
         head = allRows[i].find('th')
         if(head and 'colspan' in head.attrs and head.attrs['colspan'] == '2'):
-            headHold = allRows[i].text
+            headHold = get_title_name(allRows[i].find('th'))
         passMatchTest = (re.findall(MONTH_PATTERN, allRows[i].text) or
                          re.findall(YEAR_PATTERN, allRows[i].text))
         if(SPAN_CHAR in allRows[i].text and passMatchTest):
@@ -23,6 +23,21 @@ def find_titles(soup):
      
     titleList = get_range(titleList)
     return titleList
+
+def get_title_name(headTag):
+    """Returns a string that is the name of the title"""
+    string = ""
+    for i in headTag.children:
+        try:
+            name = i.text.strip()
+        except AttributeError:
+            name = i.strip()
+
+        if(name):
+            string += name + " "
+
+    return string
+            
 
 def get_range(titleList):
     """Gets the start and end dates that the person held the title"""
