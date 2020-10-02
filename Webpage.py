@@ -17,12 +17,12 @@ def title_page():
     """Gets the input, and returns the page for the results"""
     formNames = get_names()
     ###Gets the input from the user from the form
-    titles, lifeDates, names, onClickVars, links = get_person_info(formNames)
+    titles, lifeDates, names, onClickVars, links, eventDates = get_person_info(formNames)
     titleWord = "Timeline Project - " + ", ".join(names)
 
     return render_template("results.html", titles=titles, lifeDates=lifeDates,
                            names=names, onClickVars=onClickVars, links=links,
-                           titleWord=[titleWord])
+                           titleWord=[titleWord], eventDates=eventDates)
 
 def get_names():
     """Returns a list of tuples, each tuple is one line of input"""
@@ -40,18 +40,18 @@ def get_person_info(formNames):
     """Gets the name, lifespan, and titles given a list of [(name, clarify)]
 for each person"""
     titles, lifeDates, names, onClickVars, links = [], [], [], [], []
-    index = 1
+    eventDates, index = [], 1
     for i in range(len(formNames)):
         page, thisName = get_page_name(formNames[i])
         soup = open_website(page)
         thisTitle, thisLife = get_person_titles(soup, thisName)
         thisDates = get_person_dates(soup, thisLife, thisName)
-        print(thisDates[0])
 
         titles.append(thisTitle)
         lifeDates.append(thisLife)
         names.append(thisName)
         links.append(WIKI_BASE + page)
+        eventDates.append(thisDates)
         
         click = "showTitle(this, {});".format(i+1)
         onClickVars.append([(click, str(k+index)) for k in range(len(thisTitle))])
@@ -66,9 +66,12 @@ for each person"""
         names.append("Common")
         links.append(TIMELINE_LINK)
         click = "showTitle(this, {});".format(len(formNames)+1)
+
+        thisDates = [[] for j in range(len(bars))]
+        eventDates.append(thisDates)
         onClickVars.append([(click, str(k+index)) for k in range(len(bars))])
         
-    return titles, lifeDates, names, onClickVars, links
+    return titles, lifeDates, names, onClickVars, links, eventDates
 
 def get_person_dates(soup, life, name):
     """Gets the dates from the persons timeline"""
@@ -78,8 +81,12 @@ def get_person_dates(soup, life, name):
 
     groupedDates = get_initial_dates(titles, dates)
     newTitles = [i[0] for i in adjust_size(titles)]
-    newDates = get_final_dates(titles, groupedDates, newTitles)
-    return newDates
+    nextDates = get_final_dates(titles, groupedDates, newTitles)
+
+    finalDates = []
+    for i in nextDates:
+        finalDates.append([[j[0], round(100/len(i), 2)] for j in i])
+    return finalDates
 
 def get_initial_dates(titles, dates):
     """Splits the person's timeline dates into lists based on their titles"""
@@ -105,11 +112,11 @@ are put in another category in this method)"""
     index = 0
     for i in range(len(titles)):
         line.extend(groupedDates[i])
-        if(titles[i][0] in newTitles[index:]):
+        if(titles[i][0] == newTitles[index]):
             newDates.append(line)
             line = []
-            index = newTitles.index(titles[i][0])
-
+            index += 1
+            
     return newDates
 
 def get_page_name(name):

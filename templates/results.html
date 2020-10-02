@@ -6,34 +6,56 @@
 			function showTitle(tag){
 				var num = tag.id.slice(5,);
 				var personNum = tag.offsetParent.id.slice(6,);
-				var idValue = "text" + num;
-				var textHold = document.getElementById(idValue);
+				//var idValue = "text" + num;
+				//var textHold = document.getElementById(idValue);
 				var showId = "showText" + personNum;
-				document.getElementById(showId).innerHTML = textHold.innerHTML;
+				//document.getElementById(showId).innerHTML = textHold.innerHTML;
+				document.getElementById(showId).innerHTML = tag.innerHTML;
 				
 				var dateId = "dateRows" + num;
-				resetDates(dateId);
+				resetDates(personNum, dateId);
+				resetEventLabel(personNum, dateId);
 			}
-			function resetDates(idVal){
+			function resetDates(personNum, idVal){
 				var i = 1;
 				var flag = true;
 				while(flag){
-					if(document.getElementById("dateRows"+i) == null){
+					var newTag = document.getElementById("dateRows"+i);
+					if(newTag == null){
 						flag = false;
 					}else{
-						document.getElementById("dateRows"+i).hidden = true;
+						var parentTable = newTag.parentElement.parentElement;
+						if(parentTable.id.slice(6,) == personNum){
+							document.getElementById("dateRows"+i).hidden = true;
+						}
 					}
 					i += 1;
 				}
 				document.getElementById(idVal).hidden = false;
 			}
 			function showDate(tag){
-				alert(5);
+				var topRow = tag.parentElement;
+				var numEvents = topRow.childElementCount;
+				
+				var personNum = tag.offsetParent.id.slice(6,);
+				var eventShowId = "eventLabel" + personNum;
+				var eventShow = document.getElementById(eventShowId);
+				eventShow.innerHTML = tag.innerHTML;
+				eventShow.colSpan = numEvents;
+			}
+			function resetEventLabel(num, date){
+				var dateRow = document.getElementById(date);
+				var numDates = dateRow.childElementCount;
+				document.getElementById("eventLabel"+num).colSpan = numDates;
+				document.getElementById("eventLabel"+num).innerHTML = "Click on a timeline entry";
 			}
 		</script>
 	</head>
 	
 	<body>
+	{{ (eventDates|length) }}
+	{{ (eventDates[-1]|length) }}
+	{{ eventDates[3] }}
 	{% for i in range(names|length) %}
 		<div>
 			<h1><strong>{{ names[i] }}</strong></h1>
@@ -47,33 +69,35 @@
 			
 			{% set tableId = "person" ~ (i+1) %}
 			<table id={{ tableId }}>
-				<tr>
+				<tr height="30%">
 				{% for j in range(titles[i]|length) %}
 					{% set idString = "title" ~ onClickVars[i][j][1] %}
-					<td onClick="showTitle(this);" class="holder" id={{ idString }} width={{ titles[i][j][1] }}></td>
+					<td onClick="showTitle(this);" class="holder" id={{ idString }} width={{ titles[i][j][1] }}>{{ titles[i][j][0] }}</td>
 				{% endfor %}
 				</tr>
 				<tr>
 					{% set idString = "showText" ~ (i+1) %}
 					<td colspan={{ titles[i]|length }} width="100%" id={{ idString }}>Click on a bar</td>
 				</tr>
-				<tr>
-				{% for j in range(titles[i]|length) %}
-					{% set idString = "text" ~ onClickVars[i][j][1] %}
-					<td hidden class="special" width="100%" id={{ idString }}>{{ titles[i][j][0] }}</td>
-				{% endfor %}
-				</tr>
 			</table>
-			<table>
-				{% for j in range(8) %}
-					{% set idString = "dateRows" ~ (j+1) %}
-					<tr hidden id={{ idString }}>
-						{% for k in range(10) %}
-						{% set idString = "date" ~ j*k %}
-						<td onClick="showDate(this);" class="holder" id={{ idString }} width="10%"></td>
-						{% endfor %}
+			{% set tableId = "events" ~ (i+1) %}
+			<table id={{ tableId }}>
+				{% for j in range(eventDates[i]|length) %}
+					{% set idString = "dateRows" ~ onClickVars[i][j][1] %}
+					<tr height="30%" hidden id={{ idString }}>
+						{% if((eventDates[i][j]|length) == 0) %}
+							<td hidden>There are no timeline events for this period of time</td>
+						{% else %}
+							{% for k in range(eventDates[i][j]|length) %}
+							<td onClick="showDate(this);" class="holder">{{ eventDates[i][j][k][0] }}</td>
+							{% endfor %}
+						{% endif %}
 					</tr>
 				{% endfor %}
+				{% set idString = "eventLabel" ~ (i+1) %}
+				<tr>
+					<td colspan="1" id={{ idString }}>CLICK</td>
+				</tr>
 			</table>
 		</div>
 	{% endfor %}
