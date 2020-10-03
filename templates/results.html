@@ -53,9 +53,6 @@
 	</head>
 	
 	<body>
-	{{ (eventDates|length) }}
-	{{ (eventDates[-1]|length) }}
-	{{ eventDates[3] }}
 	{% for i in range(names|length) %}
 		<div>
 			<h1><strong>{{ names[i] }}</strong></h1>
@@ -89,7 +86,7 @@
 							<td hidden>There are no timeline events for this period of time</td>
 						{% else %}
 							{% for k in range(eventDates[i][j]|length) %}
-							<td onClick="showDate(this);" class="holder">{{ eventDates[i][j][k][0] }}</td>
+							<td onClick="showDate(this);" class="holder">{{ eventDates[i][j][k] }}</td>
 							{% endfor %}
 						{% endif %}
 					</tr>

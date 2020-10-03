@@ -49,24 +49,25 @@ def lifespan(soup):
     born, died = None, None
     if(not(infobox)):
         thisYear = datetime.date.today().year
-        return thisYear*-10, thisYear
+        return [1, 0, thisYear*-10], thisYear
     
     for i in infobox.find_all('tr'):
-        if('born' in i.text.lower() and not(born)):
-            born = i
-        if('died' in i.text.lower() and not(died)):
-            died = i
+        if(not(i.find('th'))): continue
+        if('born' in i.find('th').text.lower() and not(born)):
+            born = i.find('td')
+        if('died' in i.find('th').text.lower() and not(died)):
+            died = i.find('td')
 
     dieYear = None
     bornYear = None
     if(born):
-        bornYear = birth_year(born.text.strip()[4:])
+        bornYear = birth_year(get_spaced_text(born).strip())
     if(died):
-        dieYear = birth_year(died.text.strip()[4:])
+        dieYear = birth_year(get_spaced_text(died).strip())
         
     if(not(dieYear) and not(bornYear)):
         todayYear = datetime.date.today().year
-        return todayYear*-10, todayYear
+        return [1, 0, todayYear*-10], todayYear
     
     if(not(bornYear)):
         bornYear = dieYear-100
@@ -75,6 +76,19 @@ def lifespan(soup):
         dieYear = datetime.date.today().year
 
     return bornYear, dieYear
+
+def get_spaced_text(tag):
+    """Gets the text from the tag, adding spaces when necessary"""
+    text = ""
+    for i in tag.children:
+        if(str(i) == i):
+            text += str(i)
+        elif(i.name == 'br'):
+            text += ' '
+        else:
+            text += i.text
+
+    return text
 
 def birth_year(text):
     """Finds what year a person was born using a line of text"""
@@ -206,7 +220,7 @@ def timeline(term=None, soup=None):
     if(term == None and soup == None):
         return None
     if(term):
-        soup = open_website(term)
+        soup = search_website(term)
     text = body_text(soup)
     text = citations(text)
 
@@ -215,12 +229,16 @@ def timeline(term=None, soup=None):
     newSentences = combine_sentences(allSentences)
 
     ###Get relevant websites
-    birthYear, deathYear = lifespan(soup)
+    birthDate, deathDate = lifespan(soup)
+    birthYear = birthDate if type(birthDate) == int else birthDate[2]
+    deathYear = deathDate if type(deathDate) == int else deathDate[2]
     #print(5, birthYear[2], 6, deathYear[2])
-    newSentences = time_sentences(newSentences, birthYear[2], deathYear[2])
-    newSentences = tag_years(newSentences, birthYear[2], deathYear[2])[1:]
+    newSentences = time_sentences(newSentences, birthYear, deathYear)
+    newSentences = tag_years(newSentences, birthYear, deathYear)[1:]
     ###Create a timeline
     newSentences = sorted(newSentences, key=lambda x:[x[1][2], x[1][0], x[1][1]])
+
+    newSentences = [[i[0].strip()] + i[1:] for i in newSentences]
     return newSentences
 
 def combine_timelines(lines, names):

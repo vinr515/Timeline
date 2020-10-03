@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import re
 
 WIKI_BASE = "https://en.wikipedia.org/wiki/"
+WIKI_SEARCH_BASE = "https://en.wikipedia.org/w/index.php?search="
 ###This pattern gets all text inside of two brackets. 
 CITATION_PATTERN = r'\[.*?\]'
 QUOTE_PATTERN = r"""[.!?]['"] """
@@ -34,12 +35,40 @@ yearPhrase = r'[0-9]{1,4}'
 FULL_DATE_PATTERN = monthPhrase + betweenPhrase + dayPhrase + betweenPhrase + yearPhrase
 BRITISH_PATTERN = dayPhrase + betweenPhrase + monthPhrase + betweenPhrase + yearPhrase
 
-def open_website(searchTerm):
+def open_website(url):
     """Returns a BeautifulSoup object for a Wikipedia Page"""
-    url = WIKI_BASE + "_".join(searchTerm.strip().split())
-    r = requests.get(url).text
+    #url = WIKI_BASE + capitalize(searchTerm)
+    r = requests.get(url)
+    text, redirectUrl = r.text, r.url
 
-    return BeautifulSoup(r, "html.parser")
+    return BeautifulSoup(text, "html.parser"), redirectUrl
+
+def get_person(person):
+    """Gets the website for a person"""
+    url = WIKI_BASE + capitalize(person)
+    return open_website(url)[0]
+
+def search_website(searchTerm):
+    """Searches wikipedia for the page closest to searchTerm"""
+    searchTerm = '+'.join(searchTerm.split())
+    url = WIKI_SEARCH_BASE+searchTerm
+    soup, redirect = open_website(url)
+
+    if(redirect != url):
+        ###It redirected to the right page
+        return soup
+    else:
+        link = soup.find('li', attrs={'class':'mw-search-result'}).find('a')
+        if(link):
+            link = WIKI_BASE[:-6]+link['href']
+            return open_website(link)[0]
+
+    return None
+
+def capitalize(searchTerm):
+    searchTerm = [i for i in searchTerm.strip().split() if i != ""]
+    searchTerm = [i[0].upper() + i[1:].lower() for i in searchTerm]
+    return "_".join(searchTerm)
 
 def citations(text):
     """Takes the citations out of the body text"""
