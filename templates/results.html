@@ -83,7 +83,7 @@
 					{% set idString = "dateRows" ~ onClickVars[i][j][1] %}
 					<tr height="30%" hidden id={{ idString }}>
 						{% if((eventDates[i][j]|length) == 0) %}
-							<td hidden>There are no timeline events for this period of time</td>
+							<td>There are no timeline events for this period of time</td>
 						{% else %}
 							{% for k in range(eventDates[i][j]|length) %}
 							<td onClick="showDate(this);" class="holder">{{ eventDates[i][j][k] }}</td>

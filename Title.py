@@ -16,6 +16,9 @@ def find_titles(soup):
         head = allRows[i].find('th')
         if(head and 'colspan' in head.attrs and head.attrs['colspan'] == '2'):
             headHold = get_title_name(allRows[i].find('th'))
+
+        if(head and (head.text.lower() in ['born', 'died'])):
+            continue
         passMatchTest = (re.findall(MONTH_PATTERN, allRows[i].text) or
                          re.findall(YEAR_PATTERN, allRows[i].text))
         if(SPAN_CHAR in allRows[i].text and passMatchTest):
