@@ -4,10 +4,12 @@ from Title import find_titles
 import timeline
 import math
 import datetime
+import time
 
 app = Flask(__name__)
 MIN_PERCENT = 1
 TIMELINE_LINK = "https://en.wikipedia.org/wiki/Timeline"
+IMAGE_HEIGHT = 225
 @app.route('/')
 def home_page():
     return render_template("index.html")
@@ -15,14 +17,23 @@ def home_page():
 @app.route('/results', methods=['GET'])
 def title_page():
     """Gets the input, and returns the page for the results"""
+    old = time.time()
     formNames = get_names()
     ###Gets the input from the user from the form
-    titles, lifeDates, names, onClickVars, links, eventDates = get_person_info(formNames)
+    output = get_person_info(formNames)
+    titles, lifeDates, names = output[0], output[1], output[2]
+    onClickVars, links, eventDates = output[3], output[4], output[5]
+    imageLinks = output[6]
     titleWord = "Timeline Project - " + ", ".join(names)
 
+    
+    new = time.time()
+    timePerPerson = (new-old)/len(titles)
+    print("Took about {} seconds per person".format(timePerPerson))
     return render_template("results.html", titles=titles, lifeDates=lifeDates,
                            names=names, onClickVars=onClickVars, links=links,
-                           titleWord=[titleWord], eventDates=eventDates)
+                           titleWord=[titleWord], eventDates=eventDates,
+                           imageLinks=imageLinks)
 
 def get_names():
     """Returns a list of tuples, each tuple is one line of input/person"""
@@ -41,11 +52,14 @@ def get_person_info(formNames):
     """Gets the name, lifespan, and titles given a list of [(name, clarify)]
 for each person"""
     titles, lifeStrings, names, onClickVars, links = [], [], [], [], []
-    eventDates, lifeDates, index = [], [], 1
+    eventDates, lifeDates, imageLinks, index = [], [], [], 1
     for i in range(len(formNames)):
         ###Finds the person's page, gets his timeline events and titles
         page, thisName = get_page_name(formNames[i])
         soup = search_website(page)
+        ###Sometimes, a nickname is entered. Here, the name used in the website
+        ###is switched to the person's real name
+        thisName = soup.find('h1').text
         thisTitle, thisLifeString, thisLife = get_person_titles(soup, thisName)
         thisDates = get_person_dates(soup, thisLife, thisName)
         
@@ -55,6 +69,9 @@ for each person"""
         links.append(WIKI_BASE + page)
         eventDates.append(thisDates)
         lifeDates.append(thisLife)
+
+        imageStats = list(get_image(soup, IMAGE_HEIGHT))
+        imageLinks.append([imageStats[0], IMAGE_HEIGHT, imageStats[1]])
 
         ###This is used for the Javascript on the website
         click = "showTitle(this, {});".format(i+1)
@@ -74,11 +91,13 @@ for each person"""
         links.append(TIMELINE_LINK)
         click = "showTitle(this, {});".format(len(formNames)+1)
 
+        ###There are no timeline events for the common timeline, so an empty list is passed
         thisDates = [[] for j in range(len(bars))]
         eventDates.append(thisDates)
+        imageLinks.append("ALL")
         onClickVars.append([(click, str(k+index)) for k in range(len(bars))])
         
-    return titles, lifeStrings, names, onClickVars, links, eventDates
+    return titles, lifeStrings, names, onClickVars, links, eventDates, imageLinks
 
 def get_person_dates(soup, life, name):
     """Gets the dates from the persons timeline. Returns a list of lists.
@@ -107,11 +126,14 @@ def get_initial_dates(titles, dates):
     """Splits the person's timeline dates into lists based on their titles"""
     groupedDates = []
     for i in range(len(titles)-1):
+        ###The dates are given as MM/DD/YYYY strings
         startDate = float_dates(list(map(int, titles[i][2].split('/'))))
         endDate = float_dates(list(map(int, titles[i+1][2].split('/'))))
+        ###This takes everything that is in the middle of both dates
         line = [j for j in dates if(float_dates(j[1]) >= startDate and float_dates(j[1]) < endDate)]
         groupedDates.append(line)
 
+    ###For the last title/part of the person's life
     groupedDates.append([j for j in dates if(float_dates(j[1]) >= endDate)])
 
     return groupedDates
@@ -122,14 +144,16 @@ def get_final_dates(titles, groupedDates, newTitles):
 are put in another category in this method)"""
     newTitles = [i[0] for i in adjust_size(titles)]
     newDates = []
-
     line = []
     index = 0
             
     for i in range(len(titles)):
         if(index >= len(newTitles)):
             break
-        
+
+        ###Adds every title to a hold variable (line), and adds line to
+        ###the final variable (newDates) when the combined time of those titles
+        ###is long enough
         line.extend(groupedDates[i])
         if(titles[i][0] == newTitles[index]):
             newDates.append(line)
@@ -139,13 +163,14 @@ are put in another category in this method)"""
     return newDates
 
 def get_page_name(name):
-    """Returns the links to each page"""
+    """Adds the clarification to the name. Returns the search term and the name"""
     if(name[1].strip() == ""):
         return name[0], name[0]
     return "{}_({})".format(name[0], name[1].lower()), name[0]
 
 def get_person_titles(soup, name):
-    """Returns everything about one person, with a soup object"""
+    """Returns a list of titles during a person's life, their lifespan as a
+string, and their lifespan as a list ([Birth Month, Birth Day, BYear], (DM, DD, DY])"""
     thisTitle, thisLife = find_titles(soup), timeline.lifespan(soup)
     
     if(type(thisLife[1]) == int):
@@ -154,11 +179,7 @@ def get_person_titles(soup, name):
     else:
         lifeString = ["/".join(map(str, i)) for i in thisLife]
 
-    for i in range(len(lifeString)):
-        if(int(lifeString[i].split("/")[2]) < 0):
-            date = lifeString[i].split("/")
-            year = str(abs(int(date[2]))) + " B.C"
-            lifeString[i] = "/".join(date[:2] + [year])
+    lifeString = [check_bc_time(i) for i in lifeString]
 
     born, died = [float_dates(i) for i in thisLife]
     thisTitle = [i for i in thisTitle if float_dates(i[1]) >= born and
@@ -174,13 +195,15 @@ def get_person_titles(soup, name):
     return thisTitle, lifeString, thisLife
 
 def scale_titles(titles, lifespan, name):
-    """Scales the titles so that one long bar can be created for the webpage"""
+    """Finds the length of each title (or combination of titles if the person held two at a time)
+as a percent of their lifespan. """
     birth, died = lifespan
     newTitles = zero_dates(titles, birth)
     if(not(newTitles)): return []
 
     deathNum = float_dates(died)-float_dates(birth)
-    
+
+    ###This scales the titles so the person was born at 0.0 and died at 100.0
     scaleNum = 100/deathNum
     newTitles = sorted([[i[0], i[1]*scaleNum, i[2], i[3]] for i in newTitles], key=lambda x:x[1])    
     barVals = bar_values(newTitles, name, "{}/{}/{}".format(*birth), "{}/{}/{}".format(*died))
@@ -188,7 +211,8 @@ def scale_titles(titles, lifespan, name):
     return barVals
 
 def zero_dates(titles, birth):
-    """Turns all the [M, D, Y] dates into one number, starting from 0"""
+    """Turns all dates in the titles from [M, D, Y] to years since birth
+(this number can, and probably will be a float)"""
     newTitles = []
     birthFloat = float_dates(birth)
     for i in range(len(titles)):
@@ -197,7 +221,7 @@ def zero_dates(titles, birth):
 
         startString = "/".join(map(str, titles[i][1]))
         endString = "/".join(map(str, titles[i][2]))
-        
+        ###The date as a string is needed later, where it will be added to the title name
         start = [titles[i][0], startNum, 1, startString]
         end = [titles[i][0], endNum, 0, endString]
         newTitles.extend([start, end])
@@ -215,17 +239,23 @@ def float_dates(date):
         print("TYPEERROR", list(date))
     month, day, year = date
     month -= 1
+    ###This isn't exact, but it mostly works
     num = year + (((month*30) + day)/365)
 
     return num
     
 def bar_values(titles, name, birth, lastTime):
-    """Gets all the values for the actual bar on the webpage"""
+    """Combines titles if two or more are held at the same time. """
+    ###Start with an empty title (the person had no title/was a private citizen)
+    ###If they did start with a title, it will be removed later for being too short
     barVals = [["", titles[0][1], birth]]
     lastTitle = ""
     for i in range(len(titles)-1):
+        ### ^^^ is used as a place holder, because and can be used in a title
         lastTitle = lastTitle.split(" ^^^ ")
+        ###1 means the person got that title, 0 means they dropped it
         if(titles[i][2] == 1):
+            ###Add the title to the list of titles they have
             lastTitle = lastTitle + [titles[i][0]]
         else:
             lastTitle.remove(titles[i][0])
@@ -235,12 +265,13 @@ def bar_values(titles, name, birth, lastTime):
         barVals.append([placeTitle, titles[i+1][1]-titles[i][1], titles[i][3]])
 
     if(sum([i[1] for i in barVals]) != 100):
+        ###This adds an empty title for the last part of the person's life
         barVals.append(["", 100-sum([i[1] for i in barVals]), titles[-1][3]])
 
     return barVals
 
 def replace_blanks(barVals, name):
-    """Adds the person's name to all bars"""
+    """Adds the person's name to all empty (private citizen) titles"""
     for i in range(len(barVals)):
         if(barVals[i][0] == ""):
             barVals[i][0] = name
@@ -259,34 +290,14 @@ def adjust_size(titles):
             barLength = 0
 
     return newTitles
-    """
-    newNum, newTitles = 0, []
-    oldTitles = []
-    for i in titles:
-        if(i[1] < MIN_PERCENT):
-            oldTitles.extend([[j, i[2]] for j in i[0].split(' and ')])
-            newNum += i[1]
-        else:
-            oldTitles = [j for j in oldTitles if j[0] in i[0].split(' and ')]
-            if(not(oldTitles)):
-                newTitles.append([i[0], i[1]+newNum, i[2]])
-            elif(len(oldTitles) == 1):
-                newTitles.append([oldTitles[0][0], i[1]+newNum, oldTitles[0][1]])
-            else:
-                print("TOO BIG")
-                print("During: ", oldTitles)
-                raise ValueError("I have no idea what to do because there are two titles")
-            oldTitles = []
-
-    return newTitles
-    """
 
 def add_time_spans(barVals, lastTime):
-    """Adds the time spans for each bar/value that gets displayed"""
+    """Adds the time spans as a string for each bar/value that gets displayed"""
     newVals = []
     for i in range(len(barVals)-1):
         fromDate, toDate = check_bc_time(barVals[i][2]), check_bc_time(barVals[i+1][2])
         newName = "{} ({} - {})".format(barVals[i][0], fromDate, toDate)
+        ###The width is a percentage of the screen that is used for the webpage
         width = str(barVals[i][1])+"%"
         newVals.append([newName, width])
 
@@ -296,14 +307,15 @@ def add_time_spans(barVals, lastTime):
     return newVals
 
 def check_bc_time(timeString):
+    """Returns a new string that uses B.C is the year is negative"""
     newTime = timeString.split('/')
-    if("b.c" in newTime[2].lower() or int(newTime[2]) >= 0):
+    if(len(newTime) < 3 or "b.c" in newTime[2].lower() or int(newTime[2]) >= 0):
         return timeString
     string = '/'.join(newTime[:2] + [str(abs(int(newTime[2]))) + " B.C"])
     return string
 
 def blank_title_bars(lifespan, name):
-    """Returns the values for the bars when a person doesn't have any titles"""
+    """Returns the values for the titles when a person doesn't have any titles"""
     startDate, endDate = "/".join(map(str, lifespan[0])), "/".join(map(str, lifespan[1]))
     string = "{} ({} - {})".format(name, startDate, endDate)
     if(lifespan[-1][1] == 32):
@@ -312,20 +324,20 @@ def blank_title_bars(lifespan, name):
     return [[string, "100.0%"]]
 
 def common_titles(lifespans, names):
-    """Makes a timeline that puts everyone's time period in perspective"""
+    """Makes a timeline that shows who was alive during the combined lifespan of everyone"""
     fakeTitles = []
+    ###Basically creates a fake person whose titles are the real people's lifespans
     for i in range(len(names)):
-        birth = lifespans[i][0]#list(map(int, lifespans[i][0].split('/')))
-        died = lifespans[i][1]#list(map(int, lifespans[i][1].split('/')))
+        birth = lifespans[i][0]
+        died = lifespans[i][1]
         fakeTitles.append([names[i], birth, died])
     
     allLifes = []
     for i in lifespans:
-        #personLife = [list(map(int, j.split('/'))) for j in i]
         allLifes.extend(i)
 
     allLifes = sorted(allLifes, key=float_dates)
-    
+    ###It creates a timeline for thish fake person
     bars = scale_titles(fakeTitles, (allLifes[0], allLifes[-1]), 'No one was alive')
     bars = replace_blanks(bars, 'No one was alive')
     bars = adjust_size(bars)

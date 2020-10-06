@@ -8,3 +8,19 @@ td.holder {
 	background-color: green;
 	font-size: 0px;
 }
+
+td.holder:hover {
+	background-color: gray;
+}
+
+td.holder:focus {
+	background-color: black;
+}
+
+tr.timelineBars {
+	height: 30%;
+}
+
+tr.showText {
+	width: 100%;
+}

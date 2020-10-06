@@ -6,15 +6,13 @@
 			function showTitle(tag){
 				var num = tag.id.slice(5,);
 				var personNum = tag.offsetParent.id.slice(6,);
-				//var idValue = "text" + num;
-				//var textHold = document.getElementById(idValue);
 				var showId = "showText" + personNum;
-				//document.getElementById(showId).innerHTML = textHold.innerHTML;
 				document.getElementById(showId).innerHTML = tag.innerHTML;
 				
 				var dateId = "dateRows" + num;
 				resetDates(personNum, dateId);
 				resetEventLabel(personNum, dateId);
+				resetColors("title", tag);
 			}
 			function resetDates(personNum, idVal){
 				var i = 1;
@@ -49,39 +47,61 @@
 				document.getElementById("eventLabel"+num).colSpan = numDates;
 				document.getElementById("eventLabel"+num).innerHTML = "Click on a timeline entry";
 			}
+			function resetColors(base, special){
+				var i = 1;
+				var flag = false;
+				while(!flag){
+					var tag = document.getElementById(base + i);
+					if(tag){
+						tag.style.backgroundColor = "";
+					}else{
+						flag = true;
+					}
+					i += 1;
+				}
+				special.style.backgroundColor = "black";
+			}
 		</script>
 	</head>
 	
 	<body>
 	{% for i in range(names|length) %}
 		<div>
-			<h1><strong>{{ names[i] }}</strong></h1>
-			{% if lifeDates[i][1] == 2020 %}
-				<p>{{ lifeDates[i][0] }} - Present</p>
-			{% else %}
-				<p>{{ lifeDates[i][0] }} - {{ lifeDates[i][1] }}</p>
-			{% endif %}
-			{% set linkName = "Link to " ~ names[i] ~ "'s Wikipedia Page" %}
-			<a href={{ links[i] }}>{{ linkName }}</a>
+			<center>
+				<h1><strong>{{ names[i] }}</strong></h1>
+				{% if lifeDates[i][1] == 2020 %}
+					<p>{{ lifeDates[i][0] }} - Present</p>
+				{% else %}
+					<p>{{ lifeDates[i][0] }} - {{ lifeDates[i][1] }}</p>
+				{% endif %}
+				{% set linkName = "Link to " ~ names[i] ~ "'s Wikipedia Page" %}
+				
+				{% if not imageLinks[i] %}
+					<p>No Image Found</p>
+				{% elif imageLinks[i] != "ALL" %}
+					<img src={{ imageLinks[i][0] }} height={{ imageLinks[i][1] }} width={{ imageLinks[i][2] }}>
+				{% endif %}
+				</br>
+				<a href={{ links[i] }}>{{ linkName }}</a>
 			
 			{% set tableId = "person" ~ (i+1) %}
 			<table id={{ tableId }}>
-				<tr height="30%">
+				<tr class="timelineBars">
 				{% for j in range(titles[i]|length) %}
 					{% set idString = "title" ~ onClickVars[i][j][1] %}
 					<td onClick="showTitle(this);" class="holder" id={{ idString }} width={{ titles[i][j][1] }}>{{ titles[i][j][0] }}</td>
 				{% endfor %}
 				</tr>
-				<tr>
+				<tr class="showText">
 					{% set idString = "showText" ~ (i+1) %}
-					<td colspan={{ titles[i]|length }} width="100%" id={{ idString }}>Click on a bar</td>
+					<td colspan={{ titles[i]|length }} id={{ idString }}>Click on a bar</td>
 				</tr>
 			</table>
 			{% set tableId = "events" ~ (i+1) %}
 			<table id={{ tableId }}>
 				{% for j in range(eventDates[i]|length) %}
 					{% set idString = "dateRows" ~ onClickVars[i][j][1] %}
-					<tr height="30%" hidden id={{ idString }}>
+					<tr class="timelineBars" hidden id={{ idString }}>
 						{% if((eventDates[i][j]|length) == 0) %}
 							<td>There are no timeline events for this period of time</td>
 						{% else %}
@@ -92,7 +112,7 @@
 					</tr>
 				{% endfor %}
 				{% set idString = "eventLabel" ~ (i+1) %}
-				<tr>
+				<tr class="showText">
 					<td colspan="1" id={{ idString }}>CLICK</td>
 				</tr>
 			</table>

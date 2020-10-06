@@ -30,6 +30,11 @@
 				clarCell.innerHTML = "<input type='text' name='" + clarLine + "' id='" + clarLine + "'>";
 				
 			}
+			function resetTime(){
+				var tag = document.getElementById("waitTime");
+				var string = "Loading ... This takes about " + findRow() + " seconds";
+				tag.innerHTML = string;
+			}
 		</script>
 	</head>
 
@@ -49,8 +54,10 @@
 				</tr>
 			</table>
 			
-			<button type="submit">Enter</button>
+			<button type="submit" onClick="resetTime();">Enter</button>
 		</form>
 		<button onClick="addRow();">Add Thing</button>
+		</br>
+		<p id="waitTime"></p>
 	</body>
 </html>

@@ -54,10 +54,12 @@ def search_website(searchTerm):
     url = WIKI_SEARCH_BASE+searchTerm
     soup, redirect = open_website(url)
 
-    if(redirect != url):
+    if(not(url in redirect)):
         ###It redirected to the right page
         return soup
     else:
+        if(not(soup.find('li', attrs={'class':'mw-search-result'}))):
+            return None
         link = soup.find('li', attrs={'class':'mw-search-result'}).find('a')
         if(link):
             link = WIKI_BASE[:-6]+link['href']
@@ -86,5 +88,20 @@ def before(date, bench):
 def after(date, bench):
     return not(before(date, bench))
 
+def get_image(soup, height):
+    """Returns the url to a picture of the person, and the width of that picture, given a height.
+Returns none if a picture is not available"""
+    box = soup.find('table', attrs={'class':'infobox'})
+    if(not(box)): return
 
+    ###All real Wikipedia images link to a website. Other, smaller images don't
+    images = [i.find('img') for i in box.find_all('a')]
+    images = [i for i in images if i]
+    if(not(images)):
+        return
+
+    link = "https:" + images[0]['src']
+    ###Scales the width, using the height as a fixed constant
+    width = (height/int(images[0]['height']))*int(images[0]['width'])
+    return link, width
 

@@ -17,8 +17,11 @@ def find_titles(soup):
         if(head and 'colspan' in head.attrs and head.attrs['colspan'] == '2'):
             headHold = get_title_name(allRows[i].find('th'))
 
+        ###Born and Died have separate information. Usually this starts the
+        ###Personal information section, which is the last section and doesn't have
+        ###titles
         if(head and (head.text.lower() in ['born', 'died'])):
-            continue
+            break
         passMatchTest = (re.findall(MONTH_PATTERN, allRows[i].text) or
                          re.findall(YEAR_PATTERN, allRows[i].text))
         if(SPAN_CHAR in allRows[i].text and passMatchTest):
@@ -61,6 +64,8 @@ def get_range(titleList):
 
         ###Gets a list of numbers for both dates
         date = [numerize_dates(j) for j in date]
+        if(None in date):
+            continue
         date = list(order_dates(*date))
 
         newList.append([i[0], date[0], date[1]])
@@ -80,8 +85,12 @@ def get_date_range(iterator, string):
 def numerize_dates(dateList):
     """Turns a list of strings into a list of numbers that are [Month, Day Year]"""
     month, day, year = 0, 0, 0
-    if(len(dateList) == 1):
+    if(len(dateList) == 1 and dateList[0].isnumeric()):
         return [0, 0, int(dateList[0])]
+    elif(len(dateList) == 1 and "bc" in dateList[0].lower()):
+        raise ValueError("BC is in the only date given in the title")
+    elif(len(dateList) == 1):
+        return None
     for i in range(len(dateList)):
         ###This gets the year/day
         if(dateList[i].isnumeric()):
