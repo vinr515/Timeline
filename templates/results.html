@@ -50,11 +50,12 @@
 			function resetColors(base, special){
 				var i = 1;
 				var flag = false;
+				var parent = special.offsetParent.id;
 				while(!flag){
 					var tag = document.getElementById(base + i);
-					if(tag){
+					if(tag && tag.offsetParent.id == parent){
 						tag.style.backgroundColor = "";
-					}else{
+					}else if(!tag){
 						flag = true;
 					}
 					i += 1;
@@ -65,12 +66,17 @@
 	</head>
 	
 	<body>
+	{% if error %}
+		<textarea id="errorFailed" READONLY cols="100">{{ error }}</textarea>
+	{% else %}
+		<textarea id="errorPassed" READONLY cols="100">No errors</textarea>
+	{% endif %}
 	{% for i in range(names|length) %}
 		<div>
 			<center>
 				<h1><strong>{{ names[i] }}</strong></h1>
-				{% if lifeDates[i][1] == 2020 %}
-					<p>{{ lifeDates[i][0] }} - Present</p>
+				{% if lifeDates[i] is string %}
+					<p>{{ lifeDates[i] }}</p>
 				{% else %}
 					<p>{{ lifeDates[i][0] }} - {{ lifeDates[i][1] }}</p>
 				{% endif %}

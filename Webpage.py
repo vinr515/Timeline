@@ -4,12 +4,15 @@ from Title import find_titles
 import timeline
 import math
 import datetime
-import time
 
 app = Flask(__name__)
 MIN_PERCENT = 1
 TIMELINE_LINK = "https://en.wikipedia.org/wiki/Timeline"
 IMAGE_HEIGHT = 225
+ERROR_MESS = ""
+###Special new line character for the error message textarea
+NEW_LINE = "&#13;&#10;"
+
 @app.route('/')
 def home_page():
     return render_template("index.html")
@@ -17,23 +20,21 @@ def home_page():
 @app.route('/results', methods=['GET'])
 def title_page():
     """Gets the input, and returns the page for the results"""
-    old = time.time()
     formNames = get_names()
     ###Gets the input from the user from the form
     output = get_person_info(formNames)
+    
     titles, lifeDates, names = output[0], output[1], output[2]
     onClickVars, links, eventDates = output[3], output[4], output[5]
     imageLinks = output[6]
+    ###This is the website title that is displayed at the top in the tab
     titleWord = "Timeline Project - " + ", ".join(names)
+    ERROR_MESS.replace("\n", NEW_LINE)
 
-    
-    new = time.time()
-    timePerPerson = (new-old)/len(titles)
-    print("Took about {} seconds per person".format(timePerPerson))
     return render_template("results.html", titles=titles, lifeDates=lifeDates,
                            names=names, onClickVars=onClickVars, links=links,
                            titleWord=[titleWord], eventDates=eventDates,
-                           imageLinks=imageLinks)
+                           imageLinks=imageLinks, error=ERROR_MESS)
 
 def get_names():
     """Returns a list of tuples, each tuple is one line of input/person"""
@@ -51,17 +52,36 @@ def get_names():
 def get_person_info(formNames):
     """Gets the name, lifespan, and titles given a list of [(name, clarify)]
 for each person"""
+    global ERROR_MESS
     titles, lifeStrings, names, onClickVars, links = [], [], [], [], []
     eventDates, lifeDates, imageLinks, index = [], [], [], 1
+    baseTitles = []
+    ###This method can't be broken up, because half of it is adding
+    ###to the lists above
     for i in range(len(formNames)):
         ###Finds the person's page, gets his timeline events and titles
         page, thisName = get_page_name(formNames[i])
         soup = search_website(page)
+        if(not(soup)):
+            ERROR_MESS += "Could not find {}\n".format(thisName)
+            continue
         ###Sometimes, a nickname is entered. Here, the name used in the website
         ###is switched to the person's real name
         thisName = soup.find('h1').text
-        thisTitle, thisLifeString, thisLife = get_person_titles(soup, thisName)
-        thisDates = get_person_dates(soup, thisLife, thisName)
+        thisLifeString, thisLife = get_person_life(soup)
+        try:
+            line = find_titles(soup)
+            baseTitles.append(line)
+            thisTitle = get_person_titles(line, thisName, thisLife, thisLifeString)
+        except:
+            ERROR_MESS += "Error while finding titles for {}\n".format(thisName)
+            continue
+            
+        try:
+            thisDates = get_person_dates(soup, thisLife, thisName)
+        except:
+            ERROR_MESS += "Error while finding events for {}\n".format(thisName)
+            continue
         
         titles.append(thisTitle)
         lifeStrings.append(thisLifeString)
@@ -70,22 +90,25 @@ for each person"""
         eventDates.append(thisDates)
         lifeDates.append(thisLife)
 
-        imageStats = list(get_image(soup, IMAGE_HEIGHT))
-        imageLinks.append([imageStats[0], IMAGE_HEIGHT, imageStats[1]])
+        try:
+            imageStats = list(get_image(soup, IMAGE_HEIGHT))
+            imageLinks.append([imageStats[0], IMAGE_HEIGHT, imageStats[1]])
+        except:
+            ERROR_MESS += "Couldn't find image for {}\n".format(thisName)
+            imageLinks.append("ALL")
 
         ###This is used for the Javascript on the website
         click = "showTitle(this, {});".format(i+1)
         onClickVars.append([(click, str(k+index)) for k in range(len(thisTitle))])
         index += len(thisTitle)
 
-    if(len(formNames) >= 2):
+    
+    ###There is no point for a common bar if we couldn't find the date for one person
+    #if(len([j for j in lifeStrings if type(j) == list]) >= 2):
+    if(len(baseTitles) >= 2):
         ###Adds a timeline of when each person lived.
-        bars, fullTime = common_titles(lifeDates, names)
+        bars, fullTime = common_titles(lifeDates, names, baseTitles)
         titles.append(bars)
-        ###32 is used as a placeholder for the present day (no month has 32 days)
-        if(fullTime[1][1] == 32):
-            fullTime = [fullTime[0], ["Present"]]
-        fullTime = ['/'.join(map(str, j)) for j in fullTime]
         lifeStrings.append(fullTime)
         names.append("Common")
         links.append(TIMELINE_LINK)
@@ -96,7 +119,7 @@ for each person"""
         eventDates.append(thisDates)
         imageLinks.append("ALL")
         onClickVars.append([(click, str(k+index)) for k in range(len(bars))])
-        
+    
     return titles, lifeStrings, names, onClickVars, links, eventDates, imageLinks
 
 def get_person_dates(soup, life, name):
@@ -168,19 +191,25 @@ def get_page_name(name):
         return name[0], name[0]
     return "{}_({})".format(name[0], name[1].lower()), name[0]
 
-def get_person_titles(soup, name):
-    """Returns a list of titles during a person's life, their lifespan as a
-string, and their lifespan as a list ([Birth Month, Birth Day, BYear], (DM, DD, DY])"""
-    thisTitle, thisLife = find_titles(soup), timeline.lifespan(soup)
-    
+def get_person_life(soup):
+    """Returns a string MM/DD/YYYY birthday and a
+    tuple of two [Month, Day, Year] lists"""
+    thisLife = timeline.lifespan(soup)
     if(type(thisLife[1]) == int):
         lifeString = ["/".join(map(str, thisLife[0])), "Present"]
-        thisLife = (thisLife[0], [12,32,thisLife[1]])
+        thisLife = (thisLife[0], [12, 32, thisLife[1]])
     else:
         lifeString = ["/".join(map(str, i)) for i in thisLife]
 
     lifeString = [check_bc_time(i) for i in lifeString]
+    if(thisLife[0][2] < -1000):
+        lifeString = "No timespan"
 
+    return lifeString, thisLife
+
+def get_person_titles(thisTitle, name, thisLife, lifeString):
+    """Returns a list of titles during a person's life, their lifespan as a
+string, and their lifespan as a list ([Birth Month, Birth Day, BYear], (DM, DD, DY])"""
     born, died = [float_dates(i) for i in thisLife]
     thisTitle = [i for i in thisTitle if float_dates(i[1]) >= born and
                  float_dates(i[2]) <= died]
@@ -192,7 +221,7 @@ string, and their lifespan as a list ([Birth Month, Birth Day, BYear], (DM, DD, 
     else:
         thisTitle = blank_title_bars(thisLife, name)
 
-    return thisTitle, lifeString, thisLife
+    return thisTitle
 
 def scale_titles(titles, lifespan, name):
     """Finds the length of each title (or combination of titles if the person held two at a time)
@@ -216,6 +245,8 @@ def zero_dates(titles, birth):
     newTitles = []
     birthFloat = float_dates(birth)
     for i in range(len(titles)):
+        if(len(titles[i][1]) == 1):
+            print(titles[i])
         startNum = float_dates(titles[i][1])
         endNum = float_dates(titles[i][2])
 
@@ -237,6 +268,7 @@ def float_dates(date):
             print(date)
     except TypeError:
         print("TYPEERROR", list(date))
+        
     month, day, year = date
     month -= 1
     ###This isn't exact, but it mostly works
@@ -323,23 +355,27 @@ def blank_title_bars(lifespan, name):
 
     return [[string, "100.0%"]]
 
-def common_titles(lifespans, names):
-    """Makes a timeline that shows who was alive during the combined lifespan of everyone"""
-    fakeTitles = []
-    ###Basically creates a fake person whose titles are the real people's lifespans
-    for i in range(len(names)):
-        birth = lifespans[i][0]
-        died = lifespans[i][1]
-        fakeTitles.append([names[i], birth, died])
-    
-    allLifes = []
-    for i in lifespans:
-        allLifes.extend(i)
+def common_titles(lifespans, names, baseTitles):
+    """Combines everyone's titles and lifespans to create one big timeline"""
+    combTitles = []
+    for i in range(len(baseTitles)):
+        for j in baseTitles[i]:
+            line = j.copy()
+            line[0] = "{} was ".format(names[i]) + line[0]
+            combTitles.append(line.copy())
 
-    allLifes = sorted(allLifes, key=float_dates)
-    ###It creates a timeline for thish fake person
-    bars = scale_titles(fakeTitles, (allLifes[0], allLifes[-1]), 'No one was alive')
-    bars = replace_blanks(bars, 'No one was alive')
+    combSpan = []
+    for i in lifespans:
+        combSpan.extend(i)
+
+    combSpan = sorted(combSpan, key=float_dates)
+    bars = scale_titles(combTitles, (combSpan[0], combSpan[-1]), "No one held any titles")
+    bars = replace_blanks(bars, "No one held any titles")
     bars = adjust_size(bars)
-    bars = add_time_spans(bars, "/".join(map(str, allLifes[-1])))
-    return bars, (allLifes[0], allLifes[-1])
+    bars = add_time_spans(bars, "/".join(map(str, combSpan[-1])))
+
+    ###32 is used as a placeholder for the present day (no month has 32 days)
+    if(fullTime[1][1] == 32):
+        fullTime = [fullTime[0], ["Present"]]
+    fullTime = ['/'.join(map(str, j)) for j in fullTime]
+    return bars, fullTime

@@ -24,3 +24,10 @@ tr.timelineBars {
 tr.showText {
 	width: 100%;
 }
+
+#errorFailed {
+	color: red;
+}
+#errorPassed {
+	color: green;
+}
