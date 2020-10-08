@@ -1,6 +1,14 @@
 <html>
 	<head>
 		<title>Timeline Project</title>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+		<link rel="stylesheet" type="text/css" href="../static/css/indexstyle.css">
+		
 		<script language="Javascript">
 			var MAX_ENTRIES = 50;
 			function findRow(){
@@ -39,7 +47,8 @@
 	</head>
 
 	<body>
-		<h1><strong>Timeline</strong></h1>
+		<center>
+		<h1><strong>The Timeline Project</strong></h1>
 		
 		</br>
 		<form action="/results" method="get">
@@ -52,12 +61,15 @@
 					<td><input type="text" name="term1" id="term1"></td>
 					<td><input type="text" name="clarify1" id="clarify1"></td>
 				</tr>
+				<tr>
+					<td><button type="button" onClick="addRow();" id="addButton">Add Person</button></td>
+					<td><button type="submit" onClick="resetTime();" id="submitButton">Enter</button></td>
+				</tr>
 			</table>
 			
-			<button type="submit" onClick="resetTime();">Enter</button>
 		</form>
-		<button onClick="addRow();">Add Thing</button>
 		</br>
 		<p id="waitTime"></p>
+		</center>
 	</body>
 </html>

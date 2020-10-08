@@ -1,6 +1,12 @@
 <html>
 	<head>
 		<title id="pageTitle">{{ titleWord[0] }}</title>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
 		<link rel="stylesheet" type="text/css" href="../static/css/resultstyle.css">
 		<script Language="Javascript">
 			function showTitle(tag){
@@ -119,7 +125,7 @@
 				{% endfor %}
 				{% set idString = "eventLabel" ~ (i+1) %}
 				<tr class="showText">
-					<td colspan="1" id={{ idString }}>CLICK</td>
+					<td colspan="1" id={{ idString }}>Click on a timeline entry</td>
 				</tr>
 			</table>
 		</div>

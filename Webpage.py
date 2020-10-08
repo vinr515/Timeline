@@ -6,7 +6,7 @@ import math
 import datetime
 
 app = Flask(__name__)
-MIN_PERCENT = 1
+MIN_PERCENT = 0.5
 TIMELINE_LINK = "https://en.wikipedia.org/wiki/Timeline"
 IMAGE_HEIGHT = 225
 ERROR_MESS = ""
@@ -375,6 +375,7 @@ def common_titles(lifespans, names, baseTitles):
     bars = add_time_spans(bars, "/".join(map(str, combSpan[-1])))
 
     ###32 is used as a placeholder for the present day (no month has 32 days)
+    fullTime = [combSpan[0], combSpan[-1]]
     if(fullTime[1][1] == 32):
         fullTime = [fullTime[0], ["Present"]]
     fullTime = ['/'.join(map(str, j)) for j in fullTime]
