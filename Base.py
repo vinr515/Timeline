@@ -19,6 +19,8 @@ OLD_YEAR_PATTERN = r'[0-9]{1,4} ..'
 DATE_PATTERN = r'[0-9 ]*[A-Z]'
 ###This character is used instead of a hyphen for some things in Wikipedia
 SPAN_CHAR = chr(8211)
+###This character is used as a "circa"
+CIRCA_CHAR = "c."
 OLD_SPAN_PATTERN = r'[0-9 ABCDE'+SPAN_CHAR+r']+'
 
 MONTH_PATTERN = r''

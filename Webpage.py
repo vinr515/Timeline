@@ -105,7 +105,7 @@ for each person"""
     
     ###There is no point for a common bar if we couldn't find the date for one person
     #if(len([j for j in lifeStrings if type(j) == list]) >= 2):
-    if(len(baseTitles) >= 2):
+    if(len(baseTitles)-baseTitles.count([]) >= 2):
         ###Adds a timeline of when each person lived.
         bars, fullTime = common_titles(lifeDates, names, baseTitles)
         titles.append(bars)
@@ -235,7 +235,11 @@ as a percent of their lifespan. """
     ###This scales the titles so the person was born at 0.0 and died at 100.0
     scaleNum = 100/deathNum
     newTitles = sorted([[i[0], i[1]*scaleNum, i[2], i[3]] for i in newTitles], key=lambda x:x[1])    
-    barVals = bar_values(newTitles, name, "{}/{}/{}".format(*birth), "{}/{}/{}".format(*died))
+    if(died[2]-birth[2] > 1000):
+        birthString, deathString = "Unknown", "Unknown"
+    else:
+        birthString, deathString = "{}/{}/{}".format(*birth), "{}/{}/{}".format(*died)
+    barVals = bar_values(newTitles, name, birthString, deathString)
     
     return barVals
 
@@ -341,7 +345,11 @@ def add_time_spans(barVals, lastTime):
 def check_bc_time(timeString):
     """Returns a new string that uses B.C is the year is negative"""
     newTime = timeString.split('/')
-    if(len(newTime) < 3 or "b.c" in newTime[2].lower() or int(newTime[2]) >= 0):
+    ###Present dates and unknown dates are not changed, they go through the first if
+    if(False in [i.isnumeric() for i in newTime]):
+        return timeString
+    ###This checks AD dates, and dates that already went through the function
+    if("b.c" in newTime[2].lower() or int(newTime[2]) >= 0):
         return timeString
     string = '/'.join(newTime[:2] + [str(abs(int(newTime[2]))) + " B.C"])
     return string
@@ -349,8 +357,10 @@ def check_bc_time(timeString):
 def blank_title_bars(lifespan, name):
     """Returns the values for the titles when a person doesn't have any titles"""
     startDate, endDate = "/".join(map(str, lifespan[0])), "/".join(map(str, lifespan[1]))
+    if(lifespan[1][2]-lifespan[0][2] > 1000):
+        startDate, endDate = "Unknown", "Unknown"
     string = "{} ({} - {})".format(name, startDate, endDate)
-    if(lifespan[-1][1] == 32):
+    if(lifespan[-1][1] == 32 and startDate != "Unknown"):
         string = "{} ({} - Present)".format(name, startDate)
 
     return [[string, "100.0%"]]
@@ -369,6 +379,9 @@ def common_titles(lifespans, names, baseTitles):
         combSpan.extend(i)
 
     combSpan = sorted(combSpan, key=float_dates)
+    print(combTitles)
+    print(combSpan[0])
+    print(combSpan[-1])
     bars = scale_titles(combTitles, (combSpan[0], combSpan[-1]), "No one held any titles")
     bars = replace_blanks(bars, "No one held any titles")
     bars = adjust_size(bars)

@@ -43,13 +43,13 @@ the wrong point"""
 
     return newSentences
 
-def lifespan(soup):
-    """Returns the birth year and death year of a person (if possible)"""
+def find_life_tags(soup):
+    """Finds the two tags that say when the person was alive"""
     infobox = soup.find('table', attrs={'class':'infobox'})
     born, died = None, None
+    thisYear = datetime.date.today().year
     if(not(infobox)):
-        thisYear = datetime.date.today().year
-        return [1, 0, thisYear*-10], thisYear
+        return [0, 0, thisYear*-10], thisYear
     
     for i in infobox.find_all('tr'):
         if(not(i.find('th'))): continue
@@ -58,24 +58,57 @@ def lifespan(soup):
         if('died' in i.find('th').text.lower() and not(died)):
             died = i.find('td')
 
+    return born, died
+
+def find_initial_dates(born, died):
+    """Finds the dates for the lifespan. Does not handle cases where one or both
+are missing"""
     dieYear = None
     bornYear = None
     if(born):
-        bornYear = birth_year(get_spaced_text(born).strip())
+        try:
+            bornYear = birth_year(get_spaced_text(born).strip())
+            print("Found {} for born".format(bornYear))
+        except ValueError:
+            bornYear = None
+            print("Error for born")
     if(died):
-        dieYear = birth_year(get_spaced_text(died).strip())
+        try:
+            dieYear = birth_year(get_spaced_text(died).strip())
+            print("Found {} for died".format(dieYear))
+        except ValueError:
+            dieYear = None
+            print("Error for died".format(dieYear))
+
+    return bornYear, dieYear
+    
+def lifespan(soup):
+    """Returns the birth year and death year of a person (if possible)"""
+    born, died = find_life_tags(soup)
+    if(type(born) == list):
+        return born, died
+
+    thisYear = datetime.date.today().year
+    bornYear, diedYear = find_initial_dates(born, died)
+    
+    if(not(bornYear or diedYear)):
+        return [1, 0, thisYear*-10], thisYear
+    if(not(diedYear) and bornYear):
+        diedYear = [bornYear[0], bornYear[1], bornYear[2]+100]
+    elif(not(bornYear) and diedYear):
+        bornYear = [diedYear[0], diedYear[1], diedYear[2]-100]
         
-    if(not(dieYear) and not(bornYear)):
+    if(not(diedYear) and not(bornYear)):
         todayYear = datetime.date.today().year
         return [1, 0, todayYear*-10], todayYear
     
     if(not(bornYear)):
-        bornYear = dieYear-100
+        bornYear = diedYear-100
 
-    if(not(dieYear)):
-        dieYear = datetime.date.today().year
+    if(not(diedYear)):
+        diedYear = datetime.date.today().year
 
-    return bornYear, dieYear
+    return bornYear, diedYear
 
 def get_spaced_text(tag):
     """Gets the text from the tag, adding spaces when necessary"""
@@ -88,6 +121,7 @@ def get_spaced_text(tag):
         else:
             text += i.text
 
+    text = citations(text).replace(CIRCA_CHAR, "")
     return text
 
 def birth_year(text):
@@ -99,6 +133,7 @@ def birth_year(text):
         ###Wikipedia uses YYYY-MM-DD
         date = list(map(int, youngMatch[0][1:-1].split('-')))
         date = [date[1], date[2], date[0]]
+        print("Matched young person")
         return date
 
     britishMatch, regMatch = re.findall(BRITISH_PATTERN, text), re.findall(FULL_DATE_PATTERN, text)
@@ -107,6 +142,7 @@ def birth_year(text):
     elif(regMatch): fullMatch = regMatch[0]
 
     if(fullMatch and not(adMatch or bcMatch)):
+        print("Full match")
         date = fullMatch.replace(',', '').split(' ')
         ###Sometimes the month comes first (June 15 vs 15 June)
         ###The month is the word, the date is the number
@@ -117,31 +153,44 @@ def birth_year(text):
         return [month, int(day), int(date[2])]
 
     if(len(adMatch) == 0 and len(bcMatch) == 0):
-        year = int(re.findall(r'[0-9]+', text)[0])
-        return [1, 0, year]
+        year = find_number(text)
+        return [0, 0, year]
     
     line = adMatch[0] if adMatch else bcMatch[0]
-
+    print("AD/BC Match")
     return ad_bc_birthday(line)
+
+def find_number(text):
+    """Looks through the text to finds a number, adds negative if necessary.
+Used if birth/death day only contains the year"""
+    numbers = re.findall(r'[0-9]+', text)
+    if(not(numbers)):
+        raise ValueError("Date had no numbers")
+    if('bc' in text.lower()):
+        return -(int(numbers[0]))
+    return int(numbers[0])
 
 def ad_bc_birthday(text):
     """Returns birth years when AD/BC is included in the birthday line.
 (It is included for old people)"""
-    text = text.split()
+    print("Using {} for text".format(text))
+    newText = text.split()
     ###Sometimes dates are AD 42, and sometimes they are 42 AD
-    if(len(text) == 4):
-        month = text[1] if text[0].isnumeric() else text[0]
+    if(len(newText) == 4):
+        month = newText[1] if newText[0].isnumeric() else newText[0]
         month = datetime.datetime.strptime(month, "%B").month
 
-        day = int(text[0]) if text[0].isnumeric() else int(text[1])
-    else:
-        month, day = 0, 0
-    if('AD' in text):
-        return [month, day, int(text[-1])]
-    elif('BC' in text):
-        return [month, day, -int(text[-2])]
+        day = int(newText[0]) if newText[0].isnumeric() else int(newText[1])
+        ###AD goes before the number, BC goes after
+        ###This checks both
+        if(newText[2].isnumeric()):
+            return [month, day, -int(newText[2])]
+        elif(newText[3].isnumeric()):
+            return [month, day, int(newText[3])]
+    
+    month, day = 0, 0
 
-    return [month, day, 0]
+    return [month, day, find_number(text)]
 
 def time_sentences(sentences, birthYear, deathYear):
     """Gets all sentences that have a year or month in them. """
