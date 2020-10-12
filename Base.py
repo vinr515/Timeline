@@ -17,6 +17,8 @@ BC_PATTERN = r'[0-9].*BCE?'
 YEAR_PATTERN = r'[0-9]{1,4}'
 OLD_YEAR_PATTERN = r'[0-9]{1,4} ..'
 DATE_PATTERN = r'[0-9 ]*[A-Z]'
+###This finds any sentences that end with abbreviations, like "D. "
+ABBR_PATTERN = r' [A-Za-z]. $'
 ###This character is used instead of a hyphen for some things in Wikipedia
 SPAN_CHAR = chr(8211)
 ###This character is used as a "circa"

@@ -1,6 +1,11 @@
+body {
+	padding-bottom: 75px;
+}
+
 div {
 	margin-right: 50px;
 	margin-left: 50px;
+	padding-bottom: 50px;
 }
 
 table {

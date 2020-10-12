@@ -28,7 +28,7 @@ def title_page():
     onClickVars, links, eventDates = output[3], output[4], output[5]
     imageLinks = output[6]
     ###This is the website title that is displayed at the top in the tab
-    titleWord = "Timeline Project - " + ", ".join(names)
+    titleWord = "Dates and Times - " + ", ".join(names)
     ERROR_MESS.replace("\n", NEW_LINE)
 
     return render_template("results.html", titles=titles, lifeDates=lifeDates,
@@ -86,7 +86,7 @@ for each person"""
         titles.append(thisTitle)
         lifeStrings.append(thisLifeString)
         names.append(thisName)
-        links.append(WIKI_BASE + page)
+        links.append(WIKI_BASE + page.replace(" ", "_"))
         eventDates.append(thisDates)
         lifeDates.append(thisLife)
 
@@ -250,7 +250,7 @@ def zero_dates(titles, birth):
     birthFloat = float_dates(birth)
     for i in range(len(titles)):
         if(len(titles[i][1]) == 1):
-            print(titles[i])
+            print("zero_dates: ", titles[i])
         startNum = float_dates(titles[i][1])
         endNum = float_dates(titles[i][2])
 
@@ -346,7 +346,7 @@ def check_bc_time(timeString):
     """Returns a new string that uses B.C is the year is negative"""
     newTime = timeString.split('/')
     ###Present dates and unknown dates are not changed, they go through the first if
-    if(False in [i.isnumeric() for i in newTime]):
+    if(False in [i.replace("-", "").isnumeric() for i in newTime]):
         return timeString
     ###This checks AD dates, and dates that already went through the function
     if("b.c" in newTime[2].lower() or int(newTime[2]) >= 0):
@@ -379,9 +379,7 @@ def common_titles(lifespans, names, baseTitles):
         combSpan.extend(i)
 
     combSpan = sorted(combSpan, key=float_dates)
-    print(combTitles)
-    print(combSpan[0])
-    print(combSpan[-1])
+    
     bars = scale_titles(combTitles, (combSpan[0], combSpan[-1]), "No one held any titles")
     bars = replace_blanks(bars, "No one held any titles")
     bars = adjust_size(bars)
@@ -393,3 +391,4 @@ def common_titles(lifespans, names, baseTitles):
         fullTime = [fullTime[0], ["Present"]]
     fullTime = ['/'.join(map(str, j)) for j in fullTime]
     return bars, fullTime
+    

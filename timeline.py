@@ -35,11 +35,16 @@ the wrong point"""
     for i in sentences:
         ###Sometimes sentences get cutoff at abbreviations like U.S
         ###The Regex looks for a period and a space, but abbreviations don't have a space
-        if(i.count('.')+i.count('!')+i.count('?') > 1):
+        if(re.findall(ABBR_PATTERN, i)):
             line += i
         else:
             newSentences.append(line+i)
             line = ''
+        #if(i.count('.')+i.count('!')+i.count('?') < 1):
+        #    line += i
+        #else:
+        #    newSentences.append(line+i)
+        #    line = ''
 
     return newSentences
 
@@ -68,17 +73,13 @@ are missing"""
     if(born):
         try:
             bornYear = birth_year(get_spaced_text(born).strip())
-            print("Found {} for born".format(bornYear))
         except ValueError:
             bornYear = None
-            print("Error for born")
     if(died):
         try:
             dieYear = birth_year(get_spaced_text(died).strip())
-            print("Found {} for died".format(dieYear))
         except ValueError:
             dieYear = None
-            print("Error for died".format(dieYear))
 
     return bornYear, dieYear
     
@@ -94,7 +95,10 @@ def lifespan(soup):
     if(not(bornYear or diedYear)):
         return [1, 0, thisYear*-10], thisYear
     if(not(diedYear) and bornYear):
-        diedYear = [bornYear[0], bornYear[1], bornYear[2]+100]
+        if(bornYear[2]+100 >= thisYear):
+            diedYear = thisYear
+        else:
+            diedYear = [bornYear[0], bornYear[1], bornYear[2]+100]
     elif(not(bornYear) and diedYear):
         bornYear = [diedYear[0], diedYear[1], diedYear[2]-100]
         
@@ -122,6 +126,17 @@ def get_spaced_text(tag):
             text += i.text
 
     text = citations(text).replace(CIRCA_CHAR, "")
+    return remove_double_spaces(text)
+
+def remove_double_spaces(text):
+    """Removes two spaces in a row, which happen after replacing characters"""
+    count = 0
+    while("  " in text):
+        text = text.replace("  ", " ")
+        count += 1
+        if(count > 100):
+            break
+        
     return text
 
 def birth_year(text):
@@ -133,7 +148,6 @@ def birth_year(text):
         ###Wikipedia uses YYYY-MM-DD
         date = list(map(int, youngMatch[0][1:-1].split('-')))
         date = [date[1], date[2], date[0]]
-        print("Matched young person")
         return date
 
     britishMatch, regMatch = re.findall(BRITISH_PATTERN, text), re.findall(FULL_DATE_PATTERN, text)
@@ -142,7 +156,6 @@ def birth_year(text):
     elif(regMatch): fullMatch = regMatch[0]
 
     if(fullMatch and not(adMatch or bcMatch)):
-        print("Full match")
         date = fullMatch.replace(',', '').split(' ')
         ###Sometimes the month comes first (June 15 vs 15 June)
         ###The month is the word, the date is the number
@@ -157,7 +170,6 @@ def birth_year(text):
         return [0, 0, year]
     
     line = adMatch[0] if adMatch else bcMatch[0]
-    print("AD/BC Match")
     return ad_bc_birthday(line)
 
 def find_number(text):
@@ -173,7 +185,6 @@ Used if birth/death day only contains the year"""
 def ad_bc_birthday(text):
     """Returns birth years when AD/BC is included in the birthday line.
 (It is included for old people)"""
-    print("Using {} for text".format(text))
     newText = text.split()
     ###Sometimes dates are AD 42, and sometimes they are 42 AD
     if(len(newText) == 4):
@@ -194,7 +205,6 @@ def ad_bc_birthday(text):
 
 def time_sentences(sentences, birthYear, deathYear):
     """Gets all sentences that have a year or month in them. """
-    #print(3, birthYear, 4, deathYear)
     newSentences = []
     for i in sentences:
         yearNum = re.findall(OLD_YEAR_PATTERN, i)
@@ -209,7 +219,6 @@ def time_sentences(sentences, birthYear, deathYear):
 def check_year(birthYear, deathYear, string):
     """Finds out whether a certain year is in the person's lifespan.
 allYears is a list of years/numbers in a sentence"""
-    #print(1, birthYear, 2, deathYear)
     allYears = re.findall(OLD_YEAR_PATTERN, string)
     if(not(allYears)):
         allYears = re.findall(YEAR_PATTERN, string)
@@ -281,7 +290,6 @@ def timeline(term=None, soup=None):
     birthDate, deathDate = lifespan(soup)
     birthYear = birthDate if type(birthDate) == int else birthDate[2]
     deathYear = deathDate if type(deathDate) == int else deathDate[2]
-    #print(5, birthYear[2], 6, deathYear[2])
     newSentences = time_sentences(newSentences, birthYear, deathYear)
     newSentences = tag_years(newSentences, birthYear, deathYear)[1:]
     ###Create a timeline
