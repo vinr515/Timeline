@@ -28,7 +28,7 @@ def title_page():
     onClickVars, links, eventDates = output[3], output[4], output[5]
     imageLinks = output[6]
     ###This is the website title that is displayed at the top in the tab
-    titleWord = "Green Years - " + ", ".join(names)
+    titleWord = "Pastime - " + ", ".join(names)
     ERROR_MESS.replace("\n", NEW_LINE)
 
     return render_template("results.html", titles=titles, lifeDates=lifeDates,
