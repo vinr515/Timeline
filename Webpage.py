@@ -9,7 +9,6 @@ app = Flask(__name__)
 MIN_PERCENT = 0.5
 TIMELINE_LINK = "https://en.wikipedia.org/wiki/Timeline"
 IMAGE_HEIGHT = 225
-ERROR_MESS = ""
 ###Special new line character for the error message textarea
 NEW_LINE = "&#13;&#10;"
 
@@ -23,14 +22,18 @@ def title_page():
     formNames = get_names()
     ###Gets the input from the user from the form
     output = get_person_info(formNames)
-    
+
+    ###The output from the method is needed for the website
+    ###It has: titles, lifespans, names, links, events, images for each of the people
+    ### and error message and special variable for HTML
     titles, lifeDates, names = output[0], output[1], output[2]
     onClickVars, links, eventDates = output[3], output[4], output[5]
-    imageLinks = output[6]
+    imageLinks, ERROR_MESS = output[6], output[7]
     ###This is the website title that is displayed at the top in the tab
     titleWord = "Pastime - " + ", ".join(names)
+    
     ERROR_MESS.replace("\n", NEW_LINE)
-
+    
     return render_template("results.html", titles=titles, lifeDates=lifeDates,
                            names=names, onClickVars=onClickVars, links=links,
                            titleWord=[titleWord], eventDates=eventDates,
@@ -52,12 +55,12 @@ def get_names():
 def get_person_info(formNames):
     """Gets the name, lifespan, and titles given a list of [(name, clarify)]
 for each person"""
-    global ERROR_MESS
     titles, lifeStrings, names, onClickVars, links = [], [], [], [], []
     eventDates, lifeDates, imageLinks, index = [], [], [], 1
+    ERROR_MESS = ""
     baseTitles = []
     ###This method can't be broken up, because half of it is adding
-    ###to the lists above
+    ###to the lists above, and some of it is an error message
     for i in range(len(formNames)):
         ###Finds the person's page, gets his timeline events and titles
         page, thisName = get_page_name(formNames[i])
@@ -120,7 +123,7 @@ for each person"""
         imageLinks.append("ALL")
         onClickVars.append([(click, str(k+index)) for k in range(len(bars))])
     
-    return titles, lifeStrings, names, onClickVars, links, eventDates, imageLinks
+    return titles, lifeStrings, names, onClickVars, links, eventDates, imageLinks, ERROR_MESS
 
 def get_person_dates(soup, life, name):
     """Gets the dates from the persons timeline. Returns a list of lists.
