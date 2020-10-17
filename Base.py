@@ -2,6 +2,7 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 import re
+import json
 
 WIKI_BASE = "https://en.wikipedia.org/wiki/"
 WIKI_SEARCH_BASE = "https://en.wikipedia.org/w/index.php?search="
@@ -39,6 +40,24 @@ yearPhrase = r'[0-9]{1,4}'
 FULL_DATE_PATTERN = monthPhrase + betweenPhrase + dayPhrase + betweenPhrase + yearPhrase
 BRITISH_PATTERN = dayPhrase + betweenPhrase + monthPhrase + betweenPhrase + yearPhrase
 
+REQUEST_HEADER = {":authority": "en.wikipedia.org",
+":method": "GET",
+":path": "/w/api.php?action=opensearch&format=json&formatversion=2&search=George%20Was&namespace=0&limit=10",
+":scheme": "https",
+"accept": "application/json, text/javascript, */*; q=0.01",
+"accept-encoding": "gzip, deflate, br",
+"accept-language": "en-US,en;q=0.9",
+"cache-control": "no-cache",
+"cookie": "WMF-Last-Access=17-Oct-2020; WMF-Last-Access-Global=17-Oct-2020; GeoIP=US:MD:Rockville:39.08:-77.17:v4; enwikimwuser-sessionId=ef3885ed5a16873d53b9",
+"pragma": "no-cache",
+"referer": "https://en.wikipedia.org/w/index.php?title=Special:Search&search=georgefaiuds&ns0=1",
+"sec-fetch-dest": "empty",
+"sec-fetch-mode": "cors",
+"sec-fetch-site": "same-origin",
+"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36",
+"x-requested-with": "XMLHttpRequest"}
+SEARCH_URL = "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&formatversion=2&search={}&namespace=0&limit=5"
+
 def open_website(url):
     """Returns a BeautifulSoup object for a Wikipedia Page"""
     #url = WIKI_BASE + capitalize(searchTerm)
@@ -54,21 +73,16 @@ def get_person(person):
 
 def search_website(searchTerm):
     """Searches wikipedia for the page closest to searchTerm"""
-    searchTerm = '+'.join(searchTerm.split())
-    url = WIKI_SEARCH_BASE+searchTerm
-    soup, redirect = open_website(url)
+    searchTerm = "%20".join(searchTerm.split())
+    newUrl = SEARCH_URL.format(searchTerm)
 
-    if(not(url in redirect)):
-        ###It redirected to the right page
-        return soup
-    else:
-        if(not(soup.find('li', attrs={'class':'mw-search-result'}))):
-            return None
-        link = soup.find('li', attrs={'class':'mw-search-result'}).find('a')
-        if(link):
-            link = WIKI_BASE[:-6]+link['href']
-            return open_website(link)[0]
+    connect = requests.get(newUrl, params=REQUEST_HEADER)
+    if(not(connect.ok)):
+        return None
 
+    response = json.loads(connect.text)
+    if(response[3]):
+        return open_website(response[3][0])[0]
     return None
 
 def capitalize(searchTerm):
