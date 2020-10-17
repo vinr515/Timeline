@@ -74,7 +74,6 @@ for each person"""
         thisLifeString, thisLife = get_person_life(soup)
         try:
             line = find_titles(soup)
-            baseTitles.append(line)
             thisTitle = get_person_titles(line, thisName, thisLife, thisLifeString)
         except:
             ERROR_MESS += "Error while finding titles for {}\n".format(thisName)
@@ -85,7 +84,8 @@ for each person"""
         except:
             ERROR_MESS += "Error while finding events for {}\n".format(thisName)
             continue
-        
+
+        baseTitles.append(line)
         titles.append(thisTitle)
         lifeStrings.append(thisLifeString)
         names.append(thisName)
