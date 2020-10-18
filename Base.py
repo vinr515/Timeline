@@ -60,7 +60,6 @@ SEARCH_URL = "https://en.wikipedia.org/w/api.php?action=opensearch&format=json&f
 
 def open_website(url):
     """Returns a BeautifulSoup object for a Wikipedia Page"""
-    #url = WIKI_BASE + capitalize(searchTerm)
     r = requests.get(url)
     text, redirectUrl = r.text, r.url
 
@@ -81,6 +80,8 @@ def search_website(searchTerm):
         return None
 
     response = json.loads(connect.text)
+    if(response[2] and response[2][0]):
+        print("Response[2]: {}, GIVEN: {}".format(response[2], searchTerm))
     if(response[3]):
         return open_website(response[3][0])[0]
     return None

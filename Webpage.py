@@ -230,6 +230,10 @@ def scale_titles(titles, lifespan, name):
     """Finds the length of each title (or combination of titles if the person held two at a time)
 as a percent of their lifespan. """
     birth, died = lifespan
+    birthNum, deathNum = float_dates(birth), float_dates(died)
+    titles = [i for i in titles if float_dates(i[1]) >= birthNum and
+              float_dates(i[2]) <= deathNum]
+    
     newTitles = zero_dates(titles, birth)
     if(not(newTitles)): return []
 
@@ -242,6 +246,7 @@ as a percent of their lifespan. """
         birthString, deathString = "Unknown", "Unknown"
     else:
         birthString, deathString = "{}/{}/{}".format(*birth), "{}/{}/{}".format(*died)
+
     barVals = bar_values(newTitles, name, birthString, deathString)
     
     return barVals
@@ -382,12 +387,11 @@ def common_titles(lifespans, names, baseTitles):
         combSpan.extend(i)
 
     combSpan = sorted(combSpan, key=float_dates)
-    
     bars = scale_titles(combTitles, (combSpan[0], combSpan[-1]), "No one held any titles")
     bars = replace_blanks(bars, "No one held any titles")
     bars = adjust_size(bars)
     bars = add_time_spans(bars, "/".join(map(str, combSpan[-1])))
-
+    
     ###32 is used as a placeholder for the present day (no month has 32 days)
     fullTime = [combSpan[0], combSpan[-1]]
     if(fullTime[1][1] == 32):
